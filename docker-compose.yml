@@ -1,5 +1,6 @@
 version: "3.9"
 services:
+  # Production app
   app:
     platform: "linux/amd64"
     build:
@@ -10,6 +11,30 @@ services:
     working_dir: /app
     ports:
       - "3000:3000"
-    image: t3-app
+    image: software-catalog-prod
     environment:
       - DATABASE_URL=database_url_goes_here
+      - NODE_ENV=production
+
+  # Development app
+  app-dev:
+    platform: "linux/amd64"
+    build:
+      context: .
+      dockerfile: .devcontainer/Dockerfile
+    working_dir: /workspace
+    ports:
+      - "3000:3000"
+      - "5555:5555"  # Prisma Studio
+    image: software-catalog-dev
+    volumes:
+      - .:/workspace
+      - node_modules:/workspace/node_modules
+    environment:
+      - DATABASE_URL=database_url_goes_here
+      - NODE_ENV=development
+      - NEXT_TELEMETRY_DISABLED=1
+    command: npm run dev
+
+volumes:
+  node_modules:
