@@ -128,6 +128,34 @@ Create a `.env` file based on `.env.example` and configure:
 - `./dev-setup.sh dev` - Start development with Docker Compose
 - `./dev-setup.sh prod` - Start production with Docker Compose
 
+### Spellchecking
+
+This project uses [cspell](https://cspell.org/) for spell checking across the codebase to maintain code quality and consistency.
+
+**Running spell check:**
+
+```bash
+# Check spelling in all files
+npm run spell
+```
+
+**Configuration:**
+
+- Custom words and project-specific terms can be added to `cspell.json`
+- Common technical terms, library names, and project vocabulary are pre-configured
+- Spell check runs on TypeScript, JavaScript, Markdown, and JSON files
+
+**Adding custom words:**
+
+If you encounter legitimate words that cspell flags as misspelled:
+
+1. Add them to the `words` array in `cspell.json`
+2. Or use inline comments for one-off cases:
+   ```typescript
+   // cspell:disable-next-line
+   const myCustomVariable = "someValue";
+   ```
+
 ## What's next? How do I make an app with this?
 
 We try to keep this project as simple as possible, so you can start with just the scaffolding we set up for you, and add additional things later when they become necessary.

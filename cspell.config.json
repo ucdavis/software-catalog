@@ -1,0 +1,50 @@
+{
+  "version": "0.2",
+  "language": "en",
+  "ignorePaths": [
+    "node_modules",
+    ".next",
+    "dist",
+    ".git",
+    "*.log"
+  ],
+  "dictionaries": [
+    "typescript",
+    "node",
+    "html",
+    "css",
+    "softwareTerms"
+  ],
+  "enableFiletypes": [
+    ".ts",
+    ".tsx",
+    ".js",
+    ".jsx",
+    ".json",
+    ".md"
+  ],
+  "words": [
+    "auth",
+    "CLIENTVAR",
+    "Distroless",
+    "nextauth",
+    "Noto",
+    "prisma",
+    "Segoe",
+    "superjson",
+    "t3",
+    "tailwindcss",
+    "tanstack",
+    "trpc",
+    "typesafety",
+    "zod"
+  ],
+  "ignoreWords": [
+    "ct3aMetadata",
+    "postinstall",
+    "db:generate",
+    "db:migrate",
+    "db:push",
+    "db:studio"
+  ]
+}
