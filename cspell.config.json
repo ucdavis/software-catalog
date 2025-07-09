@@ -16,12 +16,12 @@
     "softwareTerms"
   ],
   "enableFiletypes": [
-    ".ts",
-    ".tsx",
-    ".js",
-    ".jsx",
-    ".json",
-    ".md"
+    "ts",
+    "tsx",
+    "js",
+    "jsx",
+    "json",
+    "md"
   ],
   "words": [
     "auth",
