@@ -155,7 +155,7 @@ npm run spell
 
 **Configuration:**
 
-- Custom words and project-specific terms can be added to `cspell.json`
+- Custom words and project-specific terms can be added to `cspell.config.json`
 - Common technical terms, library names, and project vocabulary are pre-configured
 - Spell check runs on TypeScript, JavaScript, Markdown, and JSON files
 
