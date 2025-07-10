@@ -45,16 +45,16 @@ start_dev() {
     fi
     
     # Start development container
-    docker-compose up --build app-dev
+    docker compose up --build app-dev
 }
 
 # Function to start production environment
 start_prod() {
     echo -e "${YELLOW}Starting production environment...${NC}"
-    docker-compose up --build app
+    docker compose up --build app
 clean_up() {
     echo -e "${YELLOW}Cleaning up containers and volumes...${NC}"
-    docker-compose down --volumes --remove-orphans
+    docker compose down --volumes --remove-orphans
     echo -e "${YELLOW}Running 'docker system prune' will remove ALL dangling images, volumes and build cache.${NC}"
     read -rp "Continue? (y/N) " ans
     if [[ "${ans}" =~ ^[Yy]$ ]]; then
@@ -64,9 +64,6 @@ clean_up() {
     fi
     echo -e "${GREEN}Cleanup completed${NC}"
 }
-    docker-compose down --volumes --remove-orphans
-    docker system prune -f
-    echo -e "${GREEN}Cleanup completed${NC}"
 }
 
 # Main script logic
