@@ -64,9 +64,6 @@ clean_up() {
     fi
     echo -e "${GREEN}Cleanup completed${NC}"
 }
-    docker compose down --volumes --remove-orphans
-    docker system prune -f
-    echo -e "${GREEN}Cleanup completed${NC}"
 }
 
 # Main script logic
