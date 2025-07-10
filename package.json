@@ -41,7 +41,7 @@
     "@eslint/eslintrc": "^3.3.1",
     "auth": "1.2.3",
     "@tailwindcss/postcss": "^4.0.15",
-    "@types/node": "^20.14.10",
+    "@types/node": "^24.0.13",
     "@types/react": "^19.0.0",
     "@types/react-dom": "^19.0.0",
     "cspell": "^9.1.3",
