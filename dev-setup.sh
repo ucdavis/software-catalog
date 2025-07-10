@@ -2,8 +2,7 @@
 
 # Development setup script for software-catalog
 
-set -e
-
+set -eo pipefail
 # Colors for output
 RED='\033[0;31m'
 GREEN='\033[0;32m'
@@ -32,8 +31,12 @@ start_dev() {
     if [ ! -f ".env" ]; then
         echo -e "${RED}Warning: .env file not found!${NC}"
         echo "Please create a .env file based on .env.example"
-        echo "Would you like to copy .env.example to .env? (y/n)"
-        read -r response
+        if [[ "${FORCE_COPY_ENV:-false}" == "true" ]]; then
+            response="y"
+        else
+            echo "Would you like to copy .env.example to .env? (y/n)"
+            read -r response
+        fi
         if [ "$response" = "y" ]; then
             cp .env.example .env
             echo -e "${GREEN}.env file created from .env.example${NC}"
@@ -49,11 +52,18 @@ start_dev() {
 start_prod() {
     echo -e "${YELLOW}Starting production environment...${NC}"
     docker-compose up --build app
-}
-
-# Function to clean up
 clean_up() {
     echo -e "${YELLOW}Cleaning up containers and volumes...${NC}"
+    docker-compose down --volumes --remove-orphans
+    echo -e "${YELLOW}Running 'docker system prune' will remove ALL dangling images, volumes and build cache.${NC}"
+    read -rp "Continue? (y/N) " ans
+    if [[ "${ans}" =~ ^[Yy]$ ]]; then
+        docker system prune -f
+    else
+        echo "Skipped system prune"
+    fi
+    echo -e "${GREEN}Cleanup completed${NC}"
+}
     docker-compose down --volumes --remove-orphans
     docker system prune -f
     echo -e "${GREEN}Cleanup completed${NC}"

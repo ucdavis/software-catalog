@@ -102,9 +102,23 @@ npm run dev
 Create a `.env` file based on `.env.example` and configure:
 
 - `DATABASE_URL` - Your database connection string
-- `NEXTAUTH_SECRET` - Random secret for NextAuth.js
-- `NEXTAUTH_URL` - Your application URL
+- `AUTH_SECRET` - Random secret for NextAuth.js authentication
+- `AUTH_DISCORD_ID` - Discord application ID for OAuth
+- `AUTH_DISCORD_SECRET` - Discord application secret for OAuth
 - Other environment-specific variables
+
+#### Generating AUTH_SECRET in DevContainers
+
+When developing in devcontainers, you can use the included `auth` CLI tool to automatically generate a secure AUTH_SECRET:
+
+```bash
+# Inside the DevContainer terminal
+npx auth secret
+```
+
+This command will automatically create a `.env.local` file with a cryptographically secure `AUTH_SECRET`. Next.js will automatically load environment variables from `.env.local`, so no manual copying is required.
+
+**Note:** The `auth` package is included as a devDependency specifically for this purpose in devcontainer environments.
 
 ### Available Scripts
 
