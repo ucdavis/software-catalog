@@ -1,28 +1,9 @@
 {
   "version": "0.2",
   "language": "en",
-  "ignorePaths": [
-    "node_modules",
-    ".next",
-    "dist",
-    ".git",
-    "*.log"
-  ],
-  "dictionaries": [
-    "typescript",
-    "node",
-    "html",
-    "css",
-    "softwareTerms"
-  ],
-  "enableFiletypes": [
-    "ts",
-    "tsx",
-    "js",
-    "jsx",
-    "json",
-    "md"
-  ],
+  "ignorePaths": ["node_modules", ".next", "dist", ".git", "*.log"],
+  "dictionaries": ["typescript", "node", "html", "css", "softwareTerms"],
+  "enableFiletypes": ["ts", "tsx", "js", "jsx", "json", "md"],
   "words": [
     "acgetchell",
     "auth",
@@ -53,6 +34,7 @@
     "npmg",
     "npmls",
     "orta",
+    "pipefail",
     "pkief",
     "prisma",
     "Segoe",
