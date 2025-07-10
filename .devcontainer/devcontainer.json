@@ -1,0 +1,119 @@
+{
+  "name": "Next.js Dev Container",
+  "image": "mcr.microsoft.com/devcontainers/typescript-node:20-bullseye",
+  
+  "features": {
+    "ghcr.io/devcontainers/features/git:1": {},
+    "ghcr.io/devcontainers/features/github-cli:1": {}
+  },
+
+  "customizations": {
+    "vscode": {
+      "extensions": [
+        // Essential Next.js/React extensions
+        "ms-vscode.vscode-typescript-next",
+        "bradlc.vscode-tailwindcss",
+        "ms-vscode.vscode-json",
+        "esbenp.prettier-vscode",
+        "dbaeumer.vscode-eslint",
+        
+        // React/JSX support
+        "formulahendry.auto-rename-tag",
+        "steoates.autoimport-es6-ts",
+        
+        // HTML/CSS enhancements
+        "ecmel.vscode-html-css",
+        "ms-vscode.vscode-css-peek",
+        
+        // Development utilities
+        "streetsidesoftware.code-spell-checker",
+        "christian-kohler.path-intellisense",
+        "christian-kohler.npm-intellisense",
+        
+        // Git integration
+        "mhutchie.git-graph",
+        "eamodio.gitlens",
+        
+        // File management
+        "redhat.vscode-yaml",
+        "ms-vscode.vscode-markdown",
+        "yzhang.markdown-all-in-one",
+        
+        // Testing
+        "ms-vscode.vscode-jest",
+        "orta.vscode-jest",
+        
+        // Docker support
+        "ms-azuretools.vscode-docker",
+        
+        // API development
+        "humao.rest-client",
+        
+        // Remote development
+        "ms-vscode.remote-containers",
+        
+        // Theme and UI
+        "pkief.material-icon-theme"
+      ],
+      
+      "settings": {
+        "typescript.preferences.importModuleSpecifier": "relative",
+        "typescript.suggest.autoImports": true,
+        "typescript.updateImportsOnFileMove.enabled": "always",
+        "editor.formatOnSave": true,
+        "editor.defaultFormatter": "esbenp.prettier-vscode",
+        "editor.codeActionsOnSave": {
+          "source.fixAll.eslint": "explicit",
+          "source.organizeImports": "explicit"
+        },
+        "emmet.includeLanguages": {
+          "javascript": "javascriptreact",
+          "typescript": "typescriptreact"
+        },
+        "emmet.triggerExpansionOnTab": true,
+        "files.associations": {
+          "*.css": "tailwindcss"
+        },
+        "tailwindCSS.includeLanguages": {
+          "typescript": "typescript",
+          "typescriptreact": "typescriptreact"
+        },
+        "tailwindCSS.experimental.classRegex": [
+          ["cva\\(([^)]*)\\)", "[\"'`]([^\"'`]*).*?[\"'`]"],
+          ["cx\\(([^)]*)\\)", "(?:'|\"|`)([^']*)(?:'|\"|`)"]
+        ]
+      }
+    }
+  },
+
+  "forwardPorts": [3000, 3001, 5000, 5555, 8080],
+  "portsAttributes": {
+    "3000": {
+      "label": "Next.js Dev Server",
+      "onAutoForward": "notify"
+    },
+    "3001": {
+      "label": "Next.js Preview",
+      "onAutoForward": "ignore"
+    },
+    "5555": {
+      "label": "Prisma Studio",
+      "onAutoForward": "ignore"
+    }
+  },
+
+  "onCreateCommand": "npm install -g typescript ts-node nodemon @next/codemod prisma create-next-app vercel eslint prettier",
+  "postCreateCommand": "npm install",
+  "postStartCommand": "npm update -g typescript ts-node nodemon @next/codemod prisma create-next-app vercel eslint prettier || true",
+  
+  "remoteUser": "node",
+  
+  "workspaceFolder": "/workspaces/${localWorkspaceFolderBasename}",
+  
+  "containerEnv": {
+    "NODE_ENV": "development",
+    "NEXT_TELEMETRY_DISABLED": "1"
+  },
+  
+  "shutdownAction": "stopContainer"
+}

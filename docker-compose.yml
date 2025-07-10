@@ -1,5 +1,5 @@
-version: "3.9"
 services:
+  # Production app
   app:
     platform: "linux/amd64"
     build:
@@ -10,6 +10,27 @@ services:
     working_dir: /app
     ports:
       - "3000:3000"
-    image: t3-app
+    image: software-catalog-prod
     environment:
-      - DATABASE_URL=database_url_goes_here
+      - DATABASE_URL=${DATABASE_URL}
+      - NODE_ENV=production
+
+  # Development app
+  app-dev:
+    platform: "linux/amd64"
+    build:
+      context: .
+      dockerfile: .devcontainer/Dockerfile
+    working_dir: /workspaces/software-catalog
+    ports:
+      - "3000:3000"
+      - "5555:5555"  # Prisma Studio
+    image: software-catalog-dev
+    volumes:
+      - .:/workspaces/software-catalog
+    environment:
+      - DATABASE_URL=${DATABASE_URL}
+      - NODE_ENV=development
+      - NEXT_TELEMETRY_DISABLED=1
+    user: "root"
+    command: sh -c "chown -R nextjs:nodejs /home/nextjs && runuser -u nextjs -- bash -c 'cd /workspaces/software-catalog && npm install && npm run dev'"
