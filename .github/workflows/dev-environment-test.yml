@@ -1,0 +1,181 @@
+name: Development Environment Test
+
+on:
+  push:
+    branches: [ main, develop ]
+  pull_request:
+    branches: [ main ]
+  workflow_dispatch:
+
+jobs:
+  test-dev-environment:
+    runs-on: ubuntu-latest
+    
+    services:
+      postgres:
+        image: postgres:15
+        env:
+          POSTGRES_PASSWORD: postgres
+          POSTGRES_USER: postgres
+          POSTGRES_DB: software-catalog
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+        ports:
+          - 5432:5432
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Validate required secrets
+        env:
+          AUTH_SECRET: ${{ secrets.AUTH_SECRET }}
+          AUTH_DISCORD_ID: ${{ secrets.AUTH_DISCORD_ID }}
+          AUTH_DISCORD_SECRET: ${{ secrets.AUTH_DISCORD_SECRET }}
+        run: |
+          echo "🔐 Validating required repository secrets..."
+          
+          if [ -z "$AUTH_SECRET" ]; then
+            echo "❌ AUTH_SECRET repository secret is not set"
+            echo "Please add AUTH_SECRET to your repository secrets"
+            exit 1
+          fi
+          
+          if [ -z "$AUTH_DISCORD_ID" ]; then
+            echo "❌ AUTH_DISCORD_ID repository secret is not set"
+            echo "Please add AUTH_DISCORD_ID to your repository secrets"
+            exit 1
+          fi
+          
+          if [ -z "$AUTH_DISCORD_SECRET" ]; then
+            echo "❌ AUTH_DISCORD_SECRET repository secret is not set"
+            echo "Please add AUTH_DISCORD_SECRET to your repository secrets"
+            exit 1
+          fi
+          
+          echo "✅ All required secrets are present"
+
+      - name: Create .env file for testing
+        env:
+          AUTH_SECRET: ${{ secrets.AUTH_SECRET }}
+          AUTH_DISCORD_ID: ${{ secrets.AUTH_DISCORD_ID }}
+          AUTH_DISCORD_SECRET: ${{ secrets.AUTH_DISCORD_SECRET }}
+        run: |
+          cat << EOF > .env
+          # Test environment variables
+          DATABASE_URL="postgresql://postgres:postgres@localhost:5432/software-catalog"
+          AUTH_SECRET="${AUTH_SECRET}"
+          AUTH_DISCORD_ID="${AUTH_DISCORD_ID}"
+          AUTH_DISCORD_SECRET="${AUTH_DISCORD_SECRET}"
+          NODE_ENV=development
+          NEXT_TELEMETRY_DISABLED=1
+          EOF
+
+      - name: Make dev-setup.sh executable
+        run: chmod +x ./dev-setup.sh
+
+      - name: Start development environment
+        run: |
+          echo "🚀 Starting development environment..."
+          # Start the development environment in the background
+          ./dev-setup.sh dev &
+          DEV_PID=$!
+          echo "Development environment started with PID: $DEV_PID"
+          echo "DEV_PID=$DEV_PID" >> $GITHUB_ENV
+
+      - name: Wait for application to be ready
+        run: |
+          echo "⏳ Waiting for application to be ready on localhost:3000..."
+          timeout=300  # 5 minutes timeout
+          elapsed=0
+          interval=10
+          
+          while [ $elapsed -lt $timeout ]; do
+            if curl -f -s http://localhost:3000 > /dev/null 2>&1; then
+              echo "✅ Application is responding on localhost:3000"
+              break
+            fi
+            
+            echo "⏳ Waiting... (${elapsed}s/${timeout}s)"
+            sleep $interval
+            elapsed=$((elapsed + interval))
+            
+            # Check if the development process is still running
+            if ! kill -0 $DEV_PID 2>/dev/null; then
+              echo "❌ Development process has stopped unexpectedly"
+              docker-compose logs app-dev || true
+              exit 1
+            fi
+          done
+          
+          if [ $elapsed -ge $timeout ]; then
+            echo "❌ Timeout: Application did not respond within ${timeout} seconds"
+            docker-compose logs app-dev || true
+            exit 1
+          fi
+
+      - name: Test application endpoints
+        run: |
+          echo "🧪 Testing application endpoints..."
+          
+          # Test root endpoint
+          echo "Testing GET /"
+          response=$(curl -s -w "%{http_code}" http://localhost:3000)
+          http_code=$(echo "$response" | tail -c 4)
+          
+          if [ "$http_code" != "200" ]; then
+            echo "❌ Root endpoint failed with HTTP $http_code"
+            echo "Response: $response"
+            exit 1
+          fi
+          
+          echo "✅ Root endpoint responded with HTTP 200"
+          
+          # Test that the response contains expected content
+          page_content=$(curl -s http://localhost:3000)
+          if echo "$page_content" | grep -q "Next.js\|React\|software-catalog"; then
+            echo "✅ Page contains expected content"
+          else
+            echo "⚠️  Page content may not be as expected, but HTTP 200 received"
+          fi
+
+      - name: Test tRPC endpoint (if available)
+        run: |
+          echo "🔧 Testing tRPC endpoint..."
+          # Test tRPC hello endpoint if it exists
+          if curl -s -f "http://localhost:3000/api/trpc/post.hello" > /dev/null 2>&1; then
+            echo "✅ tRPC endpoint is accessible"
+          else
+            echo "ℹ️  tRPC endpoint test skipped or not available"
+          fi
+
+      - name: Cleanup
+        if: always()
+        run: |
+          echo "🧹 Cleaning up..."
+          # Stop the development environment
+          if [ -n "$DEV_PID" ] && kill -0 $DEV_PID 2>/dev/null; then
+            echo "Stopping development environment (PID: $DEV_PID)"
+            kill $DEV_PID || true
+          fi
+          
+          # Stop docker-compose services
+          docker-compose down -v || true
+          
+          # Show logs for debugging if needed
+          echo "📋 Final logs:"
+          docker-compose logs app-dev || true
+
+      - name: Report success
+        if: success()
+        run: |
+          echo "🎉 Development environment test completed successfully!"
+          echo "✅ Application started correctly"
+          echo "✅ HTTP endpoints are responding"
+          echo "✅ Development setup is working"
