@@ -14,7 +14,7 @@ jobs:
       postgres:
         image: postgres:15
         env:
-          POSTGRES_PASSWORD: postgres
+          POSTGRES_PASSWORD: ${{ secrets.POSTGRES_PASSWORD_DEV }}
           POSTGRES_USER: postgres
           POSTGRES_DB: software-catalog
         options: >-
@@ -40,6 +40,12 @@ jobs:
         run: |
           echo "🔐 Validating required repository secrets..."
 
+          if [ -z "$POSTGRES_PASSWORD_DEV" ]; then
+            echo "❌ POSTGRES_PASSWORD_DEV repository secret is not set"
+            echo "Please add POSTGRES_PASSWORD_DEV to your repository secrets"
+            exit 1
+          fi
+          
           if [ -z "$AUTH_SECRET" ]; then
             echo "❌ AUTH_SECRET repository secret is not set"
             echo "Please add AUTH_SECRET to your repository secrets"
@@ -68,7 +74,7 @@ jobs:
         run: |
           cat > .env <<EOF
           # Test environment variables
-          DATABASE_URL="postgresql://postgres:postgres@localhost:5432/software-catalog"
+          DATABASE_URL="postgresql://$POSTGRES_USER:$POSTGRES_PASSWORD@localhost:5432/software-catalog"
           AUTH_SECRET=${AUTH_SECRET}
           AUTH_DISCORD_ID=${AUTH_DISCORD_ID}
           AUTH_DISCORD_SECRET=${AUTH_DISCORD_SECRET}
