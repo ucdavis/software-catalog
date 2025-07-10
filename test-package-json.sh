@@ -2,10 +2,13 @@
 
 # Test script to verify package.json exists
 echo "🔍 Testing package.json accessibility..."
+# Fail on first error, undefined var, or a pipe failure
+set -euo pipefail
 
 if [ -f "package.json" ]; then
     echo "✅ package.json found in current directory"
-    echo "📦 Project name: $(cat package.json | grep '"name"' | head -1 | awk -F'"' '{print $4}')"
+    project_name=$(grep -m1 '"name"' package.json | awk -F'"' '{print $4}')
+    echo "📦 Project name: ${project_name:-<unknown>}"
     echo "📄 Current directory: $(pwd)"
     echo "📁 Files in current directory:"
     ls -la | head -10

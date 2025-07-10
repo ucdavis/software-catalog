@@ -63,8 +63,8 @@
         "editor.formatOnSave": true,
         "editor.defaultFormatter": "esbenp.prettier-vscode",
         "editor.codeActionsOnSave": {
-          "source.fixAll.eslint": true,
-          "source.organizeImports": true
+          "source.fixAll.eslint": "explicit",
+          "source.organizeImports": "explicit"
         },
         "emmet.includeLanguages": {
           "javascript": "javascriptreact",
@@ -104,7 +104,7 @@
 
   "onCreateCommand": "npm install -g typescript ts-node nodemon @next/codemod prisma create-next-app vercel eslint prettier",
   "postCreateCommand": "npm install",
-  "postStartCommand": "sudo npm update -g typescript ts-node nodemon @next/codemod prisma create-next-app vercel eslint prettier || true",
+  "postStartCommand": "npm update -g typescript ts-node nodemon @next/codemod prisma create-next-app vercel eslint prettier || true",
   
   "remoteUser": "node",
   

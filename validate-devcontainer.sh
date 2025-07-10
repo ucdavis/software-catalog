@@ -1,8 +1,11 @@
 #!/bin/bash
 
+set -euo pipefail
+
 # Script to validate DevContainer setup
 
 echo "🔍 Validating DevContainer setup..."
+
 
 # Check if Docker is available
 if ! command -v docker &> /dev/null; then
@@ -28,12 +31,9 @@ if [ ! -f ".devcontainer/Dockerfile" ]; then
     echo "❌ .devcontainer/Dockerfile not found"
     exit 1
 fi
-
-echo "✅ DevContainer configuration files found"
-
 # Test building the DevContainer
 echo "🔨 Testing DevContainer build..."
-cd .devcontainer
+cd .devcontainer || { echo "❌ Failed to enter .devcontainer"; exit 1; }
 if docker build -t devcontainer-test . > /dev/null 2>&1; then
     echo "✅ DevContainer builds successfully"
     
@@ -60,6 +60,9 @@ else
     echo "❌ DevContainer build failed"
     exit 1
 fi
+
+# Return to original directory
+cd ..
 
 echo "🎉 DevContainer setup is valid!"
 echo ""

@@ -109,14 +109,17 @@ Create a `.env` file based on `.env.example` and configure:
 
 #### Generating AUTH_SECRET in DevContainers
 
-When developing in devcontainers, you can use the included `auth` CLI tool to automatically generate a secure AUTH_SECRET:
+When developing in devcontainers, you can use the included script to automatically generate a secure AUTH_SECRET in your `.env` file:
 
 ```bash
 # Inside the DevContainer terminal
-npx auth secret
+./generate-auth-secret.sh
 ```
 
-This command will automatically create a `.env.local` file with a cryptographically secure `AUTH_SECRET`. Next.js will automatically load environment variables from `.env.local`, so no manual copying is required.
+This script will:
+1. Generate a cryptographically secure AUTH_SECRET using `npx auth secret`
+2. Move the secret from `.env.local` to your main `.env` file
+3. Clean up the temporary `.env.local` file
 
 **Note:** The `auth` package is included as a devDependency specifically for this purpose in devcontainer environments.
 
@@ -136,6 +139,7 @@ This command will automatically create a `.env.local` file with a cryptographica
 **Setup Scripts:**
 - `./setup-devcontainer.sh` - Set up DevContainer environment
 - `./validate-devcontainer.sh` - Validate DevContainer setup
+- `./generate-auth-secret.sh` - Generate AUTH_SECRET in .env file
 - `./test-workspace-mounting.sh` - Test workspace file mounting
 - `./test-package-json.sh` - Verify package.json accessibility
 - `./test-npm-permissions.sh` - Test npm install permissions

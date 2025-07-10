@@ -12,7 +12,7 @@ services:
       - "3000:3000"
     image: software-catalog-prod
     environment:
-      - DATABASE_URL=database_url_goes_here
+      - DATABASE_URL=${DATABASE_URL}
       - NODE_ENV=production
 
   # Development app
@@ -29,7 +29,7 @@ services:
     volumes:
       - .:/workspaces/software-catalog
     environment:
-      - DATABASE_URL=database_url_goes_here
+      - DATABASE_URL=${DATABASE_URL}
       - NODE_ENV=development
       - NEXT_TELEMETRY_DISABLED=1
     user: "root"
