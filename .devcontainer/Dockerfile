@@ -1,5 +1,5 @@
 # Use Node.js 20 Debian as base image for better DevContainer compatibility
-FROM node:20-bullseye AS dev_containers_target_stage
+FROM node:24-bullseye AS dev_containers_target_stage
 
 # Update package lists and install additional development tools
 RUN apt-get update && apt-get install -y \
