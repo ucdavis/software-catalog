@@ -2,21 +2,21 @@ version: 2
 updates:
   # 1) NPM dependencies (package.json / package-lock.json)
   - package-ecosystem: "npm"
-    directory: "/" 
+    directory: "/"
     schedule:
       interval: "daily"
     open-pull-requests-limit: 10
 
   # 2) GitHub Actions workflows
   - package-ecosystem: "github-actions"
-    directory: "/" 
+    directory: "/"
     schedule:
       interval: "weekly"
     open-pull-requests-limit: 5
 
   # 3) Docker images (e.g. Node.js base images in Dockerfile / docker-compose.yml)
   - package-ecosystem: "docker"
-    directory: "/" 
+    directory: "/"
     schedule:
       interval: "weekly"
     open-pull-requests-limit: 5
