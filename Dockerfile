@@ -14,10 +14,6 @@ RUN \
     else echo "Lockfile not found." && exit 1; \
     fi
 
-# Copy Prisma schema and generate client
-COPY prisma ./prisma/
-RUN npx prisma generate
-
 ##### BUILDER
 
 FROM --platform=linux/amd64 node:20-alpine AS builder
@@ -29,7 +25,7 @@ COPY . .
 
 ENV NEXT_TELEMETRY_DISABLED=1
 
-# Generate Prisma client in builder stage
+# Generate Prisma client once in builder stage
 RUN npx prisma generate
 
 RUN \

@@ -8,26 +8,18 @@ export default {
   ],
   theme: {
     extend: {
-  // tailwind.config.js
-  module.exports = {
-    theme: {
       fontFamily: {
--       sans: [
--         'var(--font-geist-sans)',
--         'ui-sans-serif',
--         'system-ui',
--         'sans-serif',
--         'Apple Color Emoji',
--         'Segoe UI Emoji',
--         'Segoe UI Symbol',
--         'Noto Color Emoji'
--       ],
-+       sans: ['var(--font-sans)'],
+        sans: [
+          'var(--font-geist-sans)',
+          'ui-sans-serif',
+          'system-ui',
+          'sans-serif',
+          'Apple Color Emoji',
+          'Segoe UI Emoji',
+          'Segoe UI Symbol',
+          'Noto Color Emoji'
+        ],
       },
-      // …other theme settings
-    },
-    // …other config
-  }
     },
   },
   plugins: [],
