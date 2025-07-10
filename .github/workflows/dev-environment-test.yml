@@ -109,7 +109,7 @@ jobs:
             # Check if the development process is still running
             if ! kill -0 $DEV_PID 2>/dev/null; then
               echo "❌ Development process has stopped unexpectedly"
-              docker-compose logs app-dev || true
+              docker compose logs app-dev || true
               exit 1
             fi
           done
