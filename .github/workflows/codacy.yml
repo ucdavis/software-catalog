@@ -41,7 +41,8 @@ jobs:
       # Execute Codacy Analysis CLI and generate a SARIF output with the security issues identified during the analysis
       - name: Run Codacy Analysis CLI
         id: codacy
-        uses: codacy/codacy-analysis-cli-action@v4
+        continue-on-error: true
+        uses: codacy/codacy-analysis-cli-action@97bf5df3c09e75f5bcd72695998f96ebd701846e
         with:
           # Check https://github.com/codacy/codacy-analysis-cli#project-token to get your project token from your Codacy repository
           # You can also omit the token and run the tools that support default configurations
@@ -53,7 +54,6 @@ jobs:
           gh-code-scanning-compat: true
           # Force failure on issues found
           max-allowed-issues: 0
-          continue-on-error: true
           tools: eslint,semgrep,trivy,jscpd,stylelint,remark-lint,markdownlint,hadolint,shellcheck
 
       - name: Parse SARIF results
@@ -70,7 +70,7 @@ jobs:
 
       - name: Comment on PR with Codacy issues
         if: github.event_name == 'pull_request' && (steps.parse_sarif.outputs.has_major == 'true' || steps.parse_sarif.outputs.has_critical == 'true')
-        uses: peter-evans/create-or-update-comment@v3
+        uses: peter-evans/create-or-update-comment@71345be0265236311c031f5c7866368bd1eff043
         with:
           token: ${{ secrets.GITHUB_TOKEN }}
           issue-number: ${{ github.event.pull_request.number }}
@@ -80,14 +80,14 @@ jobs:
 
       - name: Add 'bug' label to PR
         if: github.event_name == 'pull_request' && (steps.parse_sarif.outputs.has_major == 'true' || steps.parse_sarif.outputs.has_critical == 'true')
-        uses: actions-ecosystem/action-add-labels@v1
+        uses: actions-ecosystem/action-add-labels@bd52874380e3909a1ac983768df6976535ece7f8
         with:
           github_token: ${{ secrets.GITHUB_TOKEN }}
           labels: bug
 
       - name: Remove 'bug' label from PR
         if: github.event_name == 'pull_request' && steps.parse_sarif.outputs.has_major == 'false' && steps.parse_sarif.outputs.has_critical == 'false'
-        uses: actions-ecosystem/action-remove-labels@v1
+        uses: actions-ecosystem/action-remove-labels@2ce5d41b4b6aa8503e285553f75ed56e0a40bae0
         with:
           github_token: ${{ secrets.GITHUB_TOKEN }}
           labels: bug
