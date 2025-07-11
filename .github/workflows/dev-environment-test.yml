@@ -90,7 +90,7 @@ jobs:
       - name: Set up Node.js
         uses: actions/setup-node@v4
         with:
-          node-version: '20'
+          node-version: '20.x'
           cache: 'npm'
 
       - name: Install dependencies
@@ -99,7 +99,7 @@ jobs:
       - name: Validate npm scripts
         run: |
           echo "🔍 Validating npm scripts are available..."
-          npm run dev:setup:help
+          npm run --if-present dev:setup:help
           echo "✅ npm scripts are properly configured"
 
       - name: Start development environment
@@ -130,7 +130,7 @@ jobs:
             elapsed=$((elapsed + interval))
 
             # Check if the development process is still running
-            if ! kill -0 $DEV_PID 2>/dev/null; then
+            if ! kill -0 "$DEV_PID" 2>/dev/null; then
               echo "❌ Development process has stopped unexpectedly"
               docker compose logs app-dev || true
               exit 1

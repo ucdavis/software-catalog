@@ -12,7 +12,7 @@
 # On Linux and macOS you can run this script directly - `./start-database.sh`
 
 # Change to the project root directory
-cd "$(dirname "$0")/.."
+cd "$(dirname "$0")/.." || { echo "❌ Unable to change to project root; aborting." >&2; exit 1; }
 
 # import env variables from .env
 set -a
