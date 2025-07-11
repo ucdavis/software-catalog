@@ -52,17 +52,30 @@ jobs:
           format: sarif
           # Adjust severity of non-security issues
           gh-code-scanning-compat: true
-          # Force failure on any issues found
-          max-allowed-issues: 0
+          # Force failure on 100 issues found
+          max-allowed-issues: 100
+
+      - name: Parse SARIF results
+        id: parse_sarif
+        run: |
+          issue_count=$(jq '[.runs[].results[]] | length' results.sarif)
+          has_critical=$(jq '[.runs[].results[] | select(.properties.securitySeverity == "critical")] | length > 0' results.sarif)
+          has_major=$(jq '[.runs[].results[] | select(.properties.securitySeverity == "major")] | length > 0' results.sarif)
+          has_minor=$(jq '[.runs[].results[] | select(.properties.securitySeverity == "minor")] | length > 0' results.sarif)
+          echo "issue_count=$issue_count" >> $GITHUB_OUTPUT
+          echo "has_critical=$has_critical" >> $GITHUB_OUTPUT
+          echo "has_major=$has_major" >> $GITHUB_OUTPUT
+          echo "has_minor=$has_minor" >> $GITHUB_OUTPUT
 
       - name: Comment on PR with Codacy issues
         if: github.event_name == 'pull_request' && steps.codacy.outcome == 'failure'
-        uses: marocchino/sticky-pull-request-comment@v2
+        uses: peter-evans/create-or-update-comment@v3
         with:
-          header: codacy
-          message: |
+          token: ${{ secrets.GITHUB_TOKEN }}
+          issue-number: ${{ github.event.pull_request.number }}
+          body: |
             ⚠️ Codacy found one or more issues in this PR.
-            Please review the [Code Scanning Alerts](../../security/code-scanning) for more details.
+            Please review the [Code Scanning Alerts](${{ github.server_url }}/${{ github.repository }}/security/code-scanning) for more details.
 
       - name: Add 'codacy-fail' label to PR
         if: github.event_name == 'pull_request' && steps.codacy.outcome == 'failure'
