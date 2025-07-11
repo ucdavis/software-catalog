@@ -7,6 +7,7 @@ set -eo pipefail
 # Change to the project root directory
 cd "$(dirname "$0")/.."
 PROJECT_ROOT=$(pwd)
+echo "Working from project root: $PROJECT_ROOT"
 # Colors for output
 RED='\033[0;31m'
 GREEN='\033[0;32m'
@@ -42,7 +43,7 @@ if [ ! -f ".env" ]; then
             read -r response
         fi
         if [ "$response" = "y" ]; then
-cp .env.example .env
+            cp ".env.example" ".env"
             echo -e "${GREEN}.env file created from .env.example${NC}"
             echo -e "${YELLOW}Please edit .env with your database URL and other settings${NC}"
         fi

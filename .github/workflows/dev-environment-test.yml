@@ -185,9 +185,9 @@ jobs:
         run: |
           echo "🧹 Cleaning up..."
           # Stop the development environment
-          if [ -n "$DEV_PID" ] && kill -0 $DEV_PID 2>/dev/null; then
+          if [ -n "$DEV_PID" ] && kill -0 "$DEV_PID" 2>/dev/null; then
             echo "Stopping development environment (PID: $DEV_PID)"
-            kill $DEV_PID || true
+            kill "$DEV_PID" || true
           fi
 
           # Stop docker compose services using npm script
