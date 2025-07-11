@@ -55,10 +55,6 @@ jobs:
           # Force failure on any issues found
           max-allowed-issues: 0
 
-      - name: Fail if Codacy found issues
-        if: (steps.parse_sarif.outputs.has_major == 'true' || steps.parse_sarif.outputs.has_critical == 'true')
-        run: exit 1
-
       - name: Comment on PR with Codacy issues
         if: github.event_name == 'pull_request' && steps.codacy.outcome == 'failure'
         uses: marocchino/sticky-pull-request-comment@v2
@@ -80,3 +76,7 @@ jobs:
         uses: github/codeql-action/upload-sarif@v3
         with:
           sarif_file: results.sarif
+
+      - name: Fail if Codacy found issues
+        if: (steps.parse_sarif.outputs.has_major == 'true' || steps.parse_sarif.outputs.has_critical == 'true')
+        run: exit 1
