@@ -99,7 +99,7 @@ jobs:
       - name: Validate npm scripts
         run: |
           echo "🔍 Validating npm scripts are available..."
-          npm run --if-present dev:setup:help
+          npm run dev:setup:help
           echo "✅ npm scripts are properly configured"
 
       - name: Start development environment
