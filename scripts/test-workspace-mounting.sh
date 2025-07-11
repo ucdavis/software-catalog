@@ -1,5 +1,8 @@
 #!/bin/bash
 
+# Change to the project root directory
+cd "$(dirname "$0")/.."
+
 # Test script to verify workspace mounting works
 echo "🔍 Testing workspace mounting..."
 

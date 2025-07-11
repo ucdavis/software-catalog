@@ -3,6 +3,10 @@
 # Development setup script for software-catalog
 
 set -eo pipefail
+
+# Change to the project root directory
+cd "$(dirname "$0")/.."
+PROJECT_ROOT=$(pwd)
 # Colors for output
 RED='\033[0;31m'
 GREEN='\033[0;32m'
@@ -28,7 +32,7 @@ start_dev() {
     echo -e "${YELLOW}Starting development environment...${NC}"
     
     # Check if .env exists
-    if [ ! -f ".env" ]; then
+if [ ! -f ".env" ]; then
         echo -e "${RED}Warning: .env file not found!${NC}"
         echo "Please create a .env file based on .env.example"
         if [[ "${FORCE_COPY_ENV:-false}" == "true" ]]; then
@@ -38,7 +42,7 @@ start_dev() {
             read -r response
         fi
         if [ "$response" = "y" ]; then
-            cp .env.example .env
+cp .env.example .env
             echo -e "${GREEN}.env file created from .env.example${NC}"
             echo -e "${YELLOW}Please edit .env with your database URL and other settings${NC}"
         fi
@@ -52,6 +56,8 @@ start_dev() {
 start_prod() {
     echo -e "${YELLOW}Starting production environment...${NC}"
     docker compose up --build app
+}
+
 clean_up() {
     echo -e "${YELLOW}Cleaning up containers and volumes...${NC}"
     docker compose down --volumes --remove-orphans
@@ -63,7 +69,6 @@ clean_up() {
         echo "Skipped system prune"
     fi
     echo -e "${GREEN}Cleanup completed${NC}"
-}
 }
 
 # Main script logic

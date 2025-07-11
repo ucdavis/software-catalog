@@ -29,7 +29,7 @@ git clone <repository-url>
 cd software-catalog
 
 # Run the setup script
-./setup-devcontainer.sh
+npm run devcontainer:setup
 ```
 
 This script will:
@@ -64,7 +64,7 @@ cp .env.example .env
 # Edit .env with your database URL
 
 # Start development environment
-./dev-setup.sh dev
+npm run dev:setup
 # OR
 docker-compose up --build app-dev
 ```
@@ -72,7 +72,7 @@ docker-compose up --build app-dev
 **For production testing:**
 
 ```bash
-./dev-setup.sh prod
+npm run dev:setup:prod
 # OR
 docker-compose up --build app
 ```
@@ -117,7 +117,7 @@ When developing in devcontainers, you can use the included script to automatical
 
 ```bash
 # Inside the DevContainer terminal
-./generate-auth-secret.sh
+npm run generate:auth-secret
 ```
 
 This script will:
@@ -139,16 +139,30 @@ This script will:
 - `npm run db:generate` - Generate Prisma client
 - `npm run db:push` - Push database schema
 - `npm run db:studio` - Open Prisma Studio
+- `npm run db:start` - Start database container
 
-**Setup Scripts:**
-- `./setup-devcontainer.sh` - Set up DevContainer environment
-- `./validate-devcontainer.sh` - Validate DevContainer setup
-- `./generate-auth-secret.sh` - Generate AUTH_SECRET in .env file
-- `./test-workspace-mounting.sh` - Test workspace file mounting
-- `./test-package-json.sh` - Verify package.json accessibility
-- `./test-npm-permissions.sh` - Test npm install permissions
-- `./dev-setup.sh dev` - Start development with Docker Compose
-- `./dev-setup.sh prod` - Start production with Docker Compose
+**Development Setup Scripts:**
+- `npm run dev:setup` - Start development environment
+- `npm run dev:setup:prod` - Start production environment
+- `npm run dev:setup:clean` - Clean up containers and volumes
+- `npm run dev:setup:help` - Show development setup help
+
+**Authentication Scripts:**
+- `npm run generate:auth-secret` - Generate AUTH_SECRET for .env file
+
+**DevContainer Scripts:**
+- `npm run devcontainer:setup` - Set up DevContainer environment
+- `npm run devcontainer:validate` - Validate DevContainer setup
+
+**Testing & Validation Scripts:**
+- `npm run test:package-json` - Test package.json accessibility
+- `npm run test:npm-permissions` - Test npm install permissions
+- `npm run test:workspace-mounting` - Test workspace mounting
+
+**Legacy Script Usage:**
+- `./scripts/dev-setup.sh dev` - Start development with Docker Compose
+- `./scripts/dev-setup.sh prod` - Start production with Docker Compose
+- All scripts are now available via `npm run` commands (see above)
 
 ### Spellchecking
 
@@ -230,7 +244,7 @@ The following ports are automatically forwarded:
 
 1. Ensure Docker Desktop is running
 2. Check Docker resources (memory/CPU)
-3. Try the setup script: `./setup-devcontainer.sh`
+3. Try the setup script: `npm run devcontainer:setup`
 4. Try rebuilding: `Ctrl+Shift+P` → "Dev Containers: Rebuild Container"
 
 **Slow performance:**
@@ -247,14 +261,14 @@ The following ports are automatically forwarded:
 
 **Extension not working:**
 
-1. Run the setup script: `./setup-devcontainer.sh`
+1. Run the setup script: `npm run devcontainer:setup`
 2. Reload VS Code window: `Ctrl+R` (or `Cmd+R` on Mac)
 3. Check if extension is enabled in container
 4. Rebuild container if persistent
 
 **Setup script troubleshooting:**
 
-If `./setup-devcontainer.sh` fails:
+If `npm run devcontainer:setup` fails:
 - Ensure Docker Desktop is running
 - Make sure you have permission to execute the script: `chmod +x setup-devcontainer.sh`
 - Check that VS Code is installed and the `code` command is available
@@ -265,7 +279,7 @@ If `./setup-devcontainer.sh` fails:
 If your project files aren't visible in the DevContainer:
 1. Ensure you're opening the project from the correct directory
 2. Check that the DevContainer opened in the right workspace folder
-3. Run `./test-workspace-mounting.sh` to verify host directory structure
+3. Run `npm run test:workspace-mounting` to verify host directory structure
 4. Try rebuilding the container: `Ctrl+Shift+P` → "Dev Containers: Rebuild Container"
 
 ### Working with Databases
@@ -342,5 +356,5 @@ When contributing to this project:
 1. Fork the repository
 2. Open in VS Code with DevContainers
 3. Make your changes
-4. Test with `./dev-setup.sh dev`
+4. Test with `npm run dev:setup`
 5. Submit a pull request
