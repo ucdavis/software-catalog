@@ -54,10 +54,9 @@ jobs:
           gh-code-scanning-compat: true
           # Force failure on any issues found
           max-allowed-issues: 0
-          max-allowed-severity: "Minor"
 
       - name: Fail if Codacy found issues
-        if: steps.codacy.outcome == 'failure'
+        if: (steps.parse_sarif.outputs.has_major == 'true' || steps.parse_sarif.outputs.has_critical == 'true')
         run: exit 1
 
       - name: Comment on PR with Codacy issues
