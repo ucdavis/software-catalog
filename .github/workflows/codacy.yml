@@ -54,7 +54,6 @@ jobs:
           gh-code-scanning-compat: true
           # Force failure on issues found
           max-allowed-issues: 0
-          tools: eslint,semgrep,trivy,jscpd,stylelint,remark-lint,markdownlint,hadolint,shellcheck
 
       - name: Parse SARIF results
         id: parse_sarif
