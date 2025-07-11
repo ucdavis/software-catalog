@@ -59,9 +59,9 @@ jobs:
         id: parse_sarif
         run: |
           issue_count=$(jq '[.runs[].results[]] | length' results.sarif)
-          has_critical=$(jq '[.runs[].results[] | select((.properties.securitySeverity // .properties.severity // .level) | ascii_downcase == "critical")] | length > 0' results.sarif)
-          has_major=$(jq '[.runs[].results[] | select((.properties.securitySeverity // .properties.severity // .level) | ascii_downcase == "major")] | length > 0' results.sarif)
-          has_minor=$(jq '[.runs[].results[] | select((.properties.securitySeverity // .properties.severity // .level) | ascii_downcase == "minor" or (.properties.securitySeverity // .properties.severity // .level) | ascii_downcase == "warning")] | length > 0' results.sarif)
+          has_critical=$(jq '[.runs[].results[] | select((.properties?.securitySeverity? // .properties?.severity? // .level?) | ascii_downcase == "critical")] | length > 0' results.sarif)
+          has_major=$(jq '[.runs[].results[] | select((.properties?.securitySeverity? // .properties?.severity? // .level?) | ascii_downcase == "major")] | length > 0' results.sarif)
+          has_minor=$(jq '[.runs[].results[] | select((.properties?.securitySeverity? // .properties?.severity? // .level?) | ascii_downcase == "minor" or (.properties?.securitySeverity? // .properties?.severity? // .level?) | ascii_downcase == "warning")] | length > 0' results.sarif)
           echo "issue_count=$issue_count" >> $GITHUB_OUTPUT
           echo "has_critical=$has_critical" >> $GITHUB_OUTPUT
           echo "has_major=$has_major" >> $GITHUB_OUTPUT
