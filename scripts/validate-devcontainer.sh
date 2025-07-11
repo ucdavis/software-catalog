@@ -2,6 +2,9 @@
 
 set -euo pipefail
 
+# Change to the project root directory
+cd "$(dirname "$0")/.."
+
 # Script to validate DevContainer setup
 
 echo "🔍 Validating DevContainer setup..."

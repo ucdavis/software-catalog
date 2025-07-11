@@ -1,5 +1,8 @@
 #!/bin/bash
 
+# Change to the project root directory
+cd "$(dirname "$0")/.."
+
 # Test script to verify package.json exists
 echo "🔍 Testing package.json accessibility..."
 # Fail on first error, undefined var, or a pipe failure

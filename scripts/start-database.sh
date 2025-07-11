@@ -11,6 +11,9 @@
 
 # On Linux and macOS you can run this script directly - `./start-database.sh`
 
+# Change to the project root directory
+cd "$(dirname "$0")/.." || { echo "❌ Unable to change to project root; aborting." >&2; exit 1; }
+
 # import env variables from .env
 set -a
 source .env
@@ -71,7 +74,12 @@ if [ "$DB_PASSWORD" = "password" ]; then
   fi
   # Generate a random URL-safe password
   DB_PASSWORD=$(openssl rand -base64 12 | tr '+/' '-_')
-  sed -i '' "s#:password@#:$DB_PASSWORD@#" .env
+  # shell-agnostic in-place edit
+  if sed --version >/dev/null 2>&1; then        # GNU sed
+    sed -i "s#:password@#:$DB_PASSWORD@#" .env
+  else                                          # BSD/macOS sed
+    sed -i '' "s#:password@#:$DB_PASSWORD@#" .env
+  fi
 fi
 
 $DOCKER_CMD run -d \

@@ -1,6 +1,9 @@
 #!/bin/bash
 set -euo pipefail
 
+# Change to the project root directory
+cd "$(dirname "$0")/.."
+
 # Test script to check npm install permissions
 echo "🔍 Testing npm install permissions..."
 # Check if we can create a test directory in the current location

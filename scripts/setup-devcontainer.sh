@@ -4,6 +4,9 @@
 
 set -e
 
+# Change to the project root directory
+cd "$(dirname "$0")/.."
+
 if ! command -v docker &> /dev/null; then
     echo "Docker is not installed. Please install Docker Desktop."
     exit 1
@@ -31,7 +34,7 @@ if [ -f .env ]; then
     echo "Environment file (.env) found."
 else
     echo "No .env file found. Creating from .env.example."
-    cp .env.example .env
+cp .env.example .env
 fi
 
 # Output current Docker version
