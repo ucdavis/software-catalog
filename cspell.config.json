@@ -11,6 +11,7 @@
     "bradlc",
     "Buildx",
     "CLIENTVAR",
+    "Codacy",
     "codemod",
     "dbaeumer",
     "devcontainers",
@@ -37,7 +38,10 @@
     "pipefail",
     "pkief",
     "prisma",
+    "sarif",
     "Segoe",
+    "semgrep",
+    "shellcheck",
     "steoates",
     "superjson",
     "t3",
@@ -51,10 +55,10 @@
   ],
   "ignoreWords": [
     "ct3aMetadata",
-    "postinstall",
     "db:generate",
     "db:migrate",
     "db:push",
-    "db:studio"
+    "db:studio",
+    "postinstall"
   ]
 }

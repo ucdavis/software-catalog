@@ -1,5 +1,9 @@
 # Software Catalog
 
+[![Codacy Badge](https://app.codacy.com/project/badge/Grade/7772438606b746fbac8563d1738d0e51)](https://app.codacy.com/gh/ucdavis/software-catalog/dashboard?utm_source=gh&utm_medium=referral&utm_content=&utm_campaign=Badge_grade)
+[![CodeQL Advanced](https://github.com/ucdavis/software-catalog/actions/workflows/codeql.yml/badge.svg)](https://github.com/ucdavis/software-catalog/actions/workflows/codeql.yml)
+[![Development Environment Test](https://github.com/ucdavis/software-catalog/actions/workflows/dev-environment-test.yml/badge.svg)](https://github.com/ucdavis/software-catalog/actions/workflows/dev-environment-test.yml)
+
 This is a [T3 Stack](https://create.t3.gg/) project bootstrapped with `create-t3-app`.
 
 ## 🚀 Getting Started
