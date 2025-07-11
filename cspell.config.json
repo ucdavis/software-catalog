@@ -44,6 +44,7 @@
     "isready",
     "kohler",
     "libc",
+    "marocchino",
     "mhutchie",
     "netcat",
     "nextauth",
@@ -72,10 +73,10 @@
   ],
   "ignoreWords": [
     "ct3aMetadata",
-    "postinstall",
     "db:generate",
     "db:migrate",
     "db:push",
-    "db:studio"
+    "db:studio",
+    "postinstall"
   ]
 }

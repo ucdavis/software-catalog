@@ -40,7 +40,9 @@ jobs:
 
       # Execute Codacy Analysis CLI and generate a SARIF output with the security issues identified during the analysis
       - name: Run Codacy Analysis CLI
-        uses: codacy/codacy-analysis-cli-action@d840f886c4bd4edc059706d09c6a1586111c540b
+        id: codacy
+        continue-on-error: true
+        uses: codacy/codacy-analysis-cli-action@v4
         with:
           # Check https://github.com/codacy/codacy-analysis-cli#project-token to get your project token from your Codacy repository
           # You can also omit the token and run the tools that support default configurations
@@ -50,9 +52,29 @@ jobs:
           format: sarif
           # Adjust severity of non-security issues
           gh-code-scanning-compat: true
-          # Force 0 exit code to allow SARIF file generation
-          # This will handover control about PR rejection to the GitHub side
-          max-allowed-issues: 2147483647
+          # Force failure on any issues found
+          max-allowed-issues: 0
+          max-allowed-severity: "Minor"
+
+      - name: Fail if Codacy found issues
+        if: steps.codacy.outcome == 'failure'
+        run: exit 1
+
+      - name: Comment on PR with Codacy issues
+        if: github.event_name == 'pull_request' && steps.codacy.outcome == 'failure'
+        uses: marocchino/sticky-pull-request-comment@v2
+        with:
+          header: codacy
+          message: |
+            ⚠️ Codacy found one or more issues in this PR.
+            Please review the [Code Scanning Alerts](../../security/code-scanning) for more details.
+
+      - name: Add 'codacy-fail' label to PR
+        if: github.event_name == 'pull_request' && steps.codacy.outcome == 'failure'
+        uses: actions-ecosystem/action-add-labels@v1
+        with:
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          labels: codacy-fail
 
       # Upload the SARIF file generated in the previous step
       - name: Upload SARIF results file
