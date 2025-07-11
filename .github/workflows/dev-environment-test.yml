@@ -87,14 +87,26 @@ jobs:
           EOF
           } >/dev/null
 
-      - name: Make dev-setup.sh executable
-        run: chmod +x ./dev-setup.sh
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Validate npm scripts
+        run: |
+          echo "🔍 Validating npm scripts are available..."
+          npm run dev:setup:help
+          echo "✅ npm scripts are properly configured"
 
       - name: Start development environment
         run: |
           echo "🚀 Starting development environment..."
           # Start the development environment in the background
-          ./dev-setup.sh dev &
+          npm run dev:setup &
           DEV_PID=$!
           echo "Development environment started with PID: $DEV_PID"
           echo "DEV_PID=$DEV_PID" >> $GITHUB_ENV
@@ -178,8 +190,8 @@ jobs:
             kill $DEV_PID || true
           fi
 
-          # Stop docker compose services
-          docker compose down -v || true
+          # Stop docker compose services using npm script
+          npm run dev:setup:clean || true
 
           # Show logs for debugging if needed
           echo "📋 Final logs:"

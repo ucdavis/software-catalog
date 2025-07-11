@@ -52,7 +52,7 @@
 - Git and GitHub CLI integration
 
 ## Testing
-Run `./validate-devcontainer.sh` to verify setup before opening in VS Code.
+Run `npm run devcontainer:validate` to verify setup before opening in VS Code.
 
 ## Next Steps
 1. Open VS Code in project directory

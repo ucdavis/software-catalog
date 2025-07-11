@@ -56,7 +56,7 @@ cp .env.example .env
 start_prod() {
     echo -e "${YELLOW}Starting production environment...${NC}"
     docker compose up --build app
-}
+
 
 clean_up() {
     echo -e "${YELLOW}Cleaning up containers and volumes...${NC}"
@@ -69,6 +69,7 @@ clean_up() {
         echo "Skipped system prune"
     fi
     echo -e "${GREEN}Cleanup completed${NC}"
+}
 }
 
 # Main script logic
