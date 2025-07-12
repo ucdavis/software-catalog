@@ -1,0 +1,4 @@
+files:
+  ignore:
+    - "package-lock.json"
+    - "prisma/migrations/**"
