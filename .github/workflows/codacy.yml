@@ -79,7 +79,7 @@ jobs:
 
       - name: Add 'bug' label to PR
         if: github.event_name == 'pull_request' && (steps.parse_sarif.outputs.has_major == 'true' || steps.parse_sarif.outputs.has_critical == 'true')
-        uses: actions-ecosystem/action-add-labels@bd52874380e3909a1ac983768df6976535ece7f8
+        uses: actions-ecosystem/action-add-labels@18f1af5e3544586314bbe15c0273249c770b2daf
         with:
           github_token: ${{ secrets.GITHUB_TOKEN }}
           labels: bug
