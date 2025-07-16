@@ -1,3 +1,5 @@
+version: '3.9'
+
 services:
   # Production app
   app:
@@ -20,7 +22,8 @@ services:
     platform: "linux/amd64"
     build:
       context: .
-      dockerfile: .devcontainer/Dockerfile
+      dockerfile: Dockerfile
+      target: development
     working_dir: /workspaces/software-catalog
     ports:
       - "3000:3000"
@@ -32,5 +35,4 @@ services:
       - DATABASE_URL=${DATABASE_URL}
       - NODE_ENV=development
       - NEXT_TELEMETRY_DISABLED=1
-    user: "root"
-    command: sh -c "chown -R nextjs:nodejs /home/nextjs && runuser -u nextjs -- bash -c 'cd /workspaces/software-catalog && npm install && npm run dev'"
+    command: ["npm", "run", "dev"]

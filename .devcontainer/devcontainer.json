@@ -1,58 +1,44 @@
 {
   "name": "Next.js Dev Container",
-  "image": "mcr.microsoft.com/devcontainers/typescript-node:20-bullseye",
+  "dockerComposeFile": "docker-compose.yml",
+  "service": "app",
+  "workspaceFolder": "/workspaces/software-catalog",
   
   "features": {
     "ghcr.io/devcontainers/features/git:1": {},
-    "ghcr.io/devcontainers/features/github-cli:1": {}
+    "ghcr.io/devcontainers/features/github-cli:1": {},
+    "ghcr.io/devcontainers/features/docker-in-docker:2": {
+      "version": "latest",
+      "enableNonRootDocker": "true"
+    }
   },
 
   "customizations": {
     "vscode": {
       "extensions": [
-        // Essential Next.js/React extensions
         "ms-vscode.vscode-typescript-next",
         "bradlc.vscode-tailwindcss",
         "ms-vscode.vscode-json",
         "esbenp.prettier-vscode",
         "dbaeumer.vscode-eslint",
-        
-        // React/JSX support
         "formulahendry.auto-rename-tag",
         "steoates.autoimport-es6-ts",
-        
-        // HTML/CSS enhancements
         "ecmel.vscode-html-css",
         "ms-vscode.vscode-css-peek",
-        
-        // Development utilities
         "streetsidesoftware.code-spell-checker",
         "christian-kohler.path-intellisense",
         "christian-kohler.npm-intellisense",
-        
-        // Git integration
         "mhutchie.git-graph",
         "eamodio.gitlens",
-        
-        // File management
         "redhat.vscode-yaml",
         "ms-vscode.vscode-markdown",
         "yzhang.markdown-all-in-one",
-        
-        // Testing
         "ms-vscode.vscode-jest",
         "orta.vscode-jest",
-        
-        // Docker support
         "ms-azuretools.vscode-docker",
-        
-        // API development
         "humao.rest-client",
-        
-        // Remote development
         "ms-vscode.remote-containers",
-        
-        // Theme and UI
+        "cweijan.vscode-postgresql-client2",
         "pkief.material-icon-theme"
       ],
       
@@ -86,7 +72,7 @@
     }
   },
 
-  "forwardPorts": [3000, 3001, 5000, 5555, 8080],
+  "forwardPorts": [3000, 3001, 5000, 5432, 5555, 8080],
   "portsAttributes": {
     "3000": {
       "label": "Next.js Dev Server",
@@ -96,23 +82,32 @@
       "label": "Next.js Preview",
       "onAutoForward": "ignore"
     },
+    "5000": {
+      "label": "Development Server",
+      "onAutoForward": "ignore"
+    },
+    "5432": {
+      "label": "PostgreSQL Database",
+      "onAutoForward": "ignore"
+    },
     "5555": {
       "label": "Prisma Studio",
+      "onAutoForward": "ignore"
+    },
+    "8080": {
+      "label": "Alternative Web Server",
       "onAutoForward": "ignore"
     }
   },
 
-  "onCreateCommand": "npm install -g typescript ts-node nodemon @next/codemod prisma create-next-app vercel eslint prettier",
-  "postCreateCommand": "npm install",
-  "postStartCommand": "npm update -g typescript ts-node nodemon @next/codemod prisma create-next-app vercel eslint prettier || true",
+	"postCreateCommand": "npm install",
   
-  "remoteUser": "node",
-  
-  "workspaceFolder": "/workspaces/${localWorkspaceFolderBasename}",
+  "remoteUser": "nextjs",
   
   "containerEnv": {
     "NODE_ENV": "development",
-    "NEXT_TELEMETRY_DISABLED": "1"
+    "NEXT_TELEMETRY_DISABLED": "1",
+    "DATABASE_URL": "postgresql://postgres:postgres@db:5432/software_catalog_dev"
   },
   
   "shutdownAction": "stopContainer"
