@@ -12,7 +12,7 @@ RUN apt-get update && apt-get install -y \
     openssh-client \
     ca-certificates \
     sudo \
-    postgresql-client \
+    postgresql-client --no-install-recommends \
     && rm -rf /var/lib/apt/lists/*
 
 # Set up working directory (DevContainer will override this)

@@ -6,8 +6,9 @@ services:
     volumes:
       - ..:/workspaces/software-catalog:cached
       - node_modules:/workspaces/software-catalog/node_modules
+    env_file:
+      - ../.env
     environment:
-      - DATABASE_URL=postgresql://postgres:postgres@db:5432/software_catalog_dev
       - NODE_ENV=development
       - NEXT_TELEMETRY_DISABLED=1
     depends_on:

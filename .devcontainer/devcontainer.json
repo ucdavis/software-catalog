@@ -8,7 +8,6 @@
     "ghcr.io/devcontainers/features/git:1": {},
     "ghcr.io/devcontainers/features/github-cli:1": {},
     "ghcr.io/devcontainers/features/docker-in-docker:2": {
-      "version": "latest",
       "enableNonRootDocker": "true"
     }
   },
@@ -106,8 +105,7 @@
   
   "containerEnv": {
     "NODE_ENV": "development",
-    "NEXT_TELEMETRY_DISABLED": "1",
-    "DATABASE_URL": "postgresql://postgres:postgres@db:5432/software_catalog_dev"
+    "NEXT_TELEMETRY_DISABLED": "1"
   },
   
   "shutdownAction": "stopContainer"

@@ -10,12 +10,17 @@ GREEN='\033[0;32m'
 YELLOW='\033[1;33m'
 NC='\033[0m' # No Color
 
-# Database connection details
-DB_HOST="db"
-DB_PORT="5432"
-DB_NAME="software_catalog_dev"
-DB_USER="postgres"
-DB_PASSWORD="postgres"
+# Load environment variables from .env file
+if [ -f ".env" ]; then
+    export $(grep -v '^#' .env | grep -v '^$' | xargs)
+fi
+
+# Database connection details (from .env or defaults)
+DB_HOST="${DB_HOST:-db}"
+DB_PORT="${DB_PORT:-5432}"
+DB_NAME="${DB_NAME:-software_catalog_dev}"
+DB_USER="${DB_USER:-postgres}"
+DB_PASSWORD="${DB_PASSWORD:-postgres}"
 
 # Function to print usage
 usage() {
