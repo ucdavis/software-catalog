@@ -1,0 +1,26 @@
+version: "3.9"
+
+services:
+  app:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    volumes:
+      - ..:/workspace:cached
+      - ./persistent_bash_history:/home/vscode/.bash_history
+    depends_on:
+      - db
+    command: sleep infinity
+  db:
+    image: postgres:17
+    restart: unless-stopped
+    # ports left out for local dev, add if you want to connect to the db from outside the container
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+      POSTGRES_DB: ${POSTGRES_DB} # this will be set in devcontainer.json
+    volumes:
+      - ./pg_data:/var/lib/postgresql/data
+
+volumes:
+  pgdata:

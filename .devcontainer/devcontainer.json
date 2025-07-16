@@ -1,0 +1,27 @@
+{
+    "name": "UC Davis App: ${localWorkspaceFolderBasename}",
+    "dockerComposeFile": "docker-compose.yml",
+    "service": "app",
+    "workspaceFolder": "/workspace",
+    "customizations": {
+        "vscode": {
+            "extensions": [
+                "esbenp.prettier-vscode",
+                "dbaeumer.vscode-eslint"
+            ],
+            "settings": {
+                "terminal.integrated.defaultProfile.linux": "bash",
+                "editor.codeActionsOnSave": {
+                    "source.fixAll.eslint": "always"
+                },
+                "editor.formatOnSave": true
+            }
+        }
+    },
+    "containerEnv": {
+        // becomes  POSTGRES_DB=myapp_db  inside the container
+        "POSTGRES_DB": "${localWorkspaceFolderBasename}_db",
+        "DATABASE_URL": "postgres://postgres:postgres@db:5432/${localWorkspaceFolderBasename}_db"
+    },
+    "postCreateCommand": "npm install"
+}
