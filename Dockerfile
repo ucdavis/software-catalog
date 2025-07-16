@@ -6,6 +6,8 @@ WORKDIR /app
 
 # Install dependencies based on the preferred package manager
 COPY package.json yarn.lock* package-lock.json* pnpm-lock.yaml* ./
+# Copy Prisma schema for postinstall hook
+COPY prisma ./prisma
 
 RUN \
     if [ -f yarn.lock ]; then yarn --frozen-lockfile; \
