@@ -30,14 +30,16 @@ if [ ! -f ".devcontainer/devcontainer.json" ]; then
     exit 1
 fi
 
-if [ ! -f ".devcontainer/Dockerfile" ]; then
-    echo "❌ .devcontainer/Dockerfile not found"
+if [ ! -f "Dockerfile" ]; then
+    echo "❌ Dockerfile not found in root directory"
     exit 1
 fi
-# Test building the DevContainer
+
+echo "✅ DevContainer configuration files found"
+
+# Test building the DevContainer using the root Dockerfile with development target
 echo "🔨 Testing DevContainer build..."
-cd .devcontainer || { echo "❌ Failed to enter .devcontainer"; exit 1; }
-if docker build -t devcontainer-test . > /dev/null 2>&1; then
+if docker build -t devcontainer-test --target development . > /dev/null 2>&1; then
     echo "✅ DevContainer builds successfully"
     
     # Test basic functionality
@@ -56,6 +58,29 @@ if docker build -t devcontainer-test . > /dev/null 2>&1; then
         exit 1
     fi
     
+    # Test dev-specific tools
+    if docker run --rm devcontainer-test tsc --version > /dev/null 2>&1; then
+        echo "✅ TypeScript is working"
+    else
+        echo "❌ TypeScript is not working"
+        exit 1
+    fi
+    
+    if docker run --rm devcontainer-test prisma --version > /dev/null 2>&1; then
+        echo "✅ Prisma CLI is working"
+    else
+        echo "❌ Prisma CLI is not working"
+        exit 1
+    fi
+    
+    # Test that development dependencies are installed
+    if docker run --rm devcontainer-test sh -c "npm list typescript" > /dev/null 2>&1; then
+        echo "✅ Development dependencies are installed"
+    else
+        echo "❌ Development dependencies are missing"
+        exit 1
+    fi
+    
     # Clean up
     docker rmi devcontainer-test > /dev/null 2>&1
     
@@ -63,9 +88,6 @@ else
     echo "❌ DevContainer build failed"
     exit 1
 fi
-
-# Return to original directory
-cd ..
 
 echo "🎉 DevContainer setup is valid!"
 echo ""

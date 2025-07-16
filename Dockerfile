@@ -37,6 +37,41 @@ RUN \
     else echo "Lockfile not found." && exit 1; \
     fi
 
+##### DEVELOPMENT
+
+FROM --platform=linux/amd64 node:24-alpine AS development
+RUN apk add --no-cache libc6-compat openssl git bash
+WORKDIR /app
+
+# Copy package files and install ALL dependencies (including dev dependencies)
+COPY package.json yarn.lock* package-lock.json* pnpm-lock.yaml* ./
+COPY prisma ./prisma
+
+RUN \
+    if [ -f yarn.lock ]; then yarn install; \
+    elif [ -f package-lock.json ]; then npm install; \
+    elif [ -f pnpm-lock.yaml ]; then npm install -g pnpm && pnpm install; \
+    else echo "Lockfile not found." && exit 1; \
+    fi
+
+# Install global dev tools
+RUN npm install -g typescript ts-node nodemon prisma @next/codemod
+
+# Copy source code
+COPY . .
+
+# Generate Prisma client
+RUN npx prisma generate
+
+# Set development environment
+ENV NODE_ENV=development
+ENV NEXT_TELEMETRY_DISABLED=1
+
+EXPOSE 3000 5555
+
+# Default command for development
+CMD ["npm", "run", "dev"]
+
 ##### RUNNER
 
 FROM --platform=linux/amd64 gcr.io/distroless/nodejs20-debian12 AS runner
