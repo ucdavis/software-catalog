@@ -1,0 +1,6 @@
+# never format build artefacts
+.next
+out
+coverage
+build
+node_modules
