@@ -18,6 +18,11 @@
             }
         }
     },
+    "features": {
+        "ghcr.io/devcontainers/features/node:1": {
+            "version": "22"
+        }
+    },
     "containerEnv": {
         // becomes  POSTGRES_DB=myapp_db  inside the container
         "POSTGRES_DB": "${localWorkspaceFolderBasename}_db",
