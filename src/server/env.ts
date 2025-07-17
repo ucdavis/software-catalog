@@ -2,14 +2,15 @@ import { z } from 'zod';
 
 const envSchema = z.object({
   // Database
-  DATABASE_URL: z.string().url(),
+  DATABASE_URL: z.url(),
 
   // NextAuth
-  NEXTAUTH_URL: z.string().url(),
-  NEXTAUTH_SECRET: z.string().min(1),
+  AUTH_SECRET: z.string().min(1),
+  AUTH_URL: z.url().min(1),
+  AUTH_TRUST_HOST: z.string().min(1).optional(),
 
   // UC Davis CAS
-  AUTH_UCD_CAS_URL: z.string().url(),
+  AUTH_UCD_CAS_URL: z.url(),
   AUTH_UCD_CAS_CLIENT_ID: z.string().min(1),
   AUTH_UCD_CAS_CLIENT_SECRET: z.string().min(1),
 
