@@ -1,5 +1,9 @@
 {
     "workbench.editor.customLabels.patterns": {
         "**/web/src/app/**/page.tsx": "${dirname} page.tsx"
-    }
+    },
+    "eslint.workingDirectories": [
+        "./web"
+    ],
+    "prettier.prettierPath": "/workspace/web/node_modules/prettier",
 }
