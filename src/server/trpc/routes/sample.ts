@@ -6,6 +6,8 @@ import {
   publicProcedure,
 } from '@/server/trpc/trpc';
 
+let count = 42;
+
 export const sampleRouter = createTRPCRouter({
   getMessage: publicProcedure.query(() => {
     return 'Hello, world!';
@@ -23,4 +25,12 @@ export const sampleRouter = createTRPCRouter({
     .query(({ input }) => {
       return input.message;
     }),
+
+  getCount: protectedProcedure.query(() => {
+    return count;
+  }),
+
+  incrementCount: protectedProcedure.mutation(() => {
+    return ++count;
+  }),
 });
