@@ -1,0 +1,6 @@
+{
+    "python.analysis.typeCheckingMode": "off",
+    "workbench.editor.customLabels.patterns": {
+        "**/web/src/app/**/page.tsx": "${dirname} page.tsx"
+    }
+}
