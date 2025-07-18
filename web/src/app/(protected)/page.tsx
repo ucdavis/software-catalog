@@ -75,7 +75,7 @@ export default async function Home() {
                 Fast & Modern
               </h3>
               <p className='text-gray-600 dark:text-gray-300'>
-                Built with Next.js 14, TypeScript, and modern development
+                Built with Next.js 15, TypeScript, and modern development
                 practices
               </p>
             </div>
@@ -130,15 +130,27 @@ export default async function Home() {
           </div>
         </section>
 
-        {/* Call to Action */}
-        <section className='text-center'>
-          <div className='bg-white dark:bg-slate-800 rounded-2xl shadow-xl p-8 max-w-2xl mx-auto'>
-            <h2 className='text-2xl font-bold text-gray-900 dark:text-white mb-4'>
-              Ready to Build Something Amazing?
+        {/* Getting Started Section */}
+        <section className='text-center mb-16'>
+          <div className='bg-gradient-to-br from-blue-100 to-blue-50 dark:from-slate-800 dark:to-slate-900 rounded-2xl shadow-xl p-8 max-w-2xl mx-auto border border-blue-200 dark:border-slate-700'>
+            <h2 className='text-2xl font-bold text-blue-700 dark:text-blue-300 mb-4'>
+              Getting Started
             </h2>
-            <p className='text-gray-600 dark:text-gray-300 mb-8'>
-              Start customizing your app by editing the pages and components.
-              Everything is ready to go!
+            <p className='text-gray-700 dark:text-gray-200 mb-6'>
+              Start building your own app with this template in just one
+              command:
+            </p>
+            <div className='bg-slate-900 text-left rounded-lg p-4 mb-6 overflow-x-auto'>
+              <pre className='text-sm text-blue-200'>
+                <code>
+                  npx create-next-app -e https://github.com/ucdavis/app-template
+                </code>
+              </pre>
+            </div>
+            <p className='text-gray-600 dark:text-gray-400 mb-8'>
+              This will scaffold a new project using this template, so you can
+              get started quickly with all the best practices and tools already
+              set up.
             </p>
             <div className='flex flex-col sm:flex-row gap-4 justify-center'>
               <a
