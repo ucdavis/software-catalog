@@ -1,2 +1,2 @@
 # .devcontainer/Dockerfile
-FROM mcr.microsoft.com/devcontainers/javascript-node:3-22
+FROM mcr.microsoft.com/devcontainers/base:ubuntu
