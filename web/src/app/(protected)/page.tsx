@@ -4,112 +4,163 @@ import Image from 'next/image';
 
 export default async function Home() {
   const session = await auth();
-
   const hello = await apiCaller.sample.getMessage();
 
   return (
-    <div className='font-sans grid grid-rows-[20px_1fr_20px] items-center justify-items-center min-h-screen p-8 pb-20 gap-16 sm:p-20'>
-      <main className='flex flex-col gap-[32px] row-start-2 items-center sm:items-start'>
-        <Image
-          className='dark:invert'
-          src='/next.svg'
-          alt='Next.js logo'
-          width={180}
-          height={38}
-          priority
-        />
-        <ol className='font-mono list-inside list-decimal text-sm/6 text-center sm:text-left'>
-          <li className='mb-2 tracking-[-.01em]'>
-            Get started by editing{' '}
-            <code className='bg-black/[.05] dark:bg-white/[.06] font-mono font-semibold px-1 py-0.5 rounded'>
-              src/app/page.tsx
-            </code>
-            .
-          </li>
-          <li className='tracking-[-.01em]'>
-            Save and see your changes instantly.
-          </li>
-          {session && (
-            <li className='tracking-[-.01em]'>
-              You are logged in as{' '}
-              <span className='font-semibold'>{session.user?.email}</span>.
-            </li>
-          )}
-        </ol>
-
-        <div className='flex gap-4 items-center flex-col sm:flex-row'>
-          <a
-            className='rounded-full border border-solid border-transparent transition-colors flex items-center justify-center bg-foreground text-background gap-2 hover:bg-[#383838] dark:hover:bg-[#ccc] font-medium text-sm sm:text-base h-10 sm:h-12 px-4 sm:px-5 sm:w-auto'
-            href='https://vercel.com/new?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app'
-            target='_blank'
-            rel='noopener noreferrer'
-          >
+    <div className='min-h-screen bg-gradient-to-br from-slate-50 to-blue-50 dark:from-slate-900 dark:to-slate-800'>
+      <div className='container mx-auto px-4 py-16'>
+        {/* Header Section */}
+        <header className='text-center mb-16'>
+          <div className='mb-8'>
             <Image
-              className='dark:invert'
-              src='/vercel.svg'
-              alt='Vercel logomark'
-              width={20}
-              height={20}
+              className='mx-auto dark:invert'
+              src='/next.svg'
+              alt='App Logo'
+              width={200}
+              height={42}
+              priority
             />
-            Deploy now
-          </a>
-          <a
-            className='rounded-full border border-solid border-black/[.08] dark:border-white/[.145] transition-colors flex items-center justify-center hover:bg-[#f2f2f2] dark:hover:bg-[#1a1a1a] hover:border-transparent font-medium text-sm sm:text-base h-10 sm:h-12 px-4 sm:px-5 w-full sm:w-auto md:w-[158px]'
-            href='https://nextjs.org/docs?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app'
-            target='_blank'
-            rel='noopener noreferrer'
-          >
-            Read our docs
-          </a>
-        </div>
-      </main>
-      <footer className='row-start-3 flex gap-[24px] flex-wrap items-center justify-center'>
-        <a
-          className='flex items-center gap-2 hover:underline hover:underline-offset-4'
-          href='https://nextjs.org/learn?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app'
-          target='_blank'
-          rel='noopener noreferrer'
-        >
-          <Image
-            aria-hidden
-            src='/file.svg'
-            alt='File icon'
-            width={16}
-            height={16}
-          />
-          Learn
-        </a>
-        <a
-          className='flex items-center gap-2 hover:underline hover:underline-offset-4'
-          href='https://vercel.com/templates?framework=next.js&utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app'
-          target='_blank'
-          rel='noopener noreferrer'
-        >
-          <Image
-            aria-hidden
-            src='/window.svg'
-            alt='Window icon'
-            width={16}
-            height={16}
-          />
-          Examples
-        </a>
-        <a
-          className='flex items-center gap-2 hover:underline hover:underline-offset-4'
-          href='https://nextjs.org?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app'
-          target='_blank'
-          rel='noopener noreferrer'
-        >
-          <Image
-            aria-hidden
-            src='/globe.svg'
-            alt='Globe icon'
-            width={16}
-            height={16}
-          />
-          Go to nextjs.org →
-        </a>
-      </footer>
+          </div>
+
+          {/* Hero Message */}
+          <div className='mb-8'>
+            <h1 className='text-5xl font-bold text-gray-900 dark:text-white mb-4'>
+              {hello}
+            </h1>
+            <p className='text-xl text-gray-600 dark:text-gray-300 max-w-2xl mx-auto'>
+              Welcome to your modern app template. Built with Next.js,
+              TypeScript, and tRPC for rapid development.
+            </p>
+          </div>
+
+          {/* User Welcome */}
+          {session && (
+            <div className='bg-white dark:bg-slate-800 rounded-lg shadow-md p-6 max-w-md mx-auto mb-8'>
+              <div className='flex items-center justify-center space-x-2'>
+                <div className='w-3 h-3 bg-green-500 rounded-full'></div>
+                <span className='text-gray-700 dark:text-gray-300'>
+                  Logged in as{' '}
+                  <span className='font-semibold text-blue-600 dark:text-blue-400'>
+                    {session.user?.name} ({session.user?.email})
+                  </span>
+                </span>
+              </div>
+            </div>
+          )}
+        </header>
+
+        {/* Features Grid */}
+        <section className='mb-16'>
+          <h2 className='text-3xl font-bold text-center text-gray-900 dark:text-white mb-12'>
+            What's Included
+          </h2>
+          <div className='grid md:grid-cols-3 gap-8 max-w-4xl mx-auto'>
+            <div className='bg-white dark:bg-slate-800 rounded-xl shadow-lg p-6 text-center'>
+              <div className='w-12 h-12 bg-blue-100 dark:bg-blue-900 rounded-lg flex items-center justify-center mx-auto mb-4'>
+                <svg
+                  className='w-6 h-6 text-blue-600 dark:text-blue-400'
+                  fill='none'
+                  stroke='currentColor'
+                  viewBox='0 0 24 24'
+                >
+                  <path
+                    strokeLinecap='round'
+                    strokeLinejoin='round'
+                    strokeWidth={2}
+                    d='M13 10V3L4 14h7v7l9-11h-7z'
+                  />
+                </svg>
+              </div>
+              <h3 className='text-xl font-semibold text-gray-900 dark:text-white mb-2'>
+                Fast & Modern
+              </h3>
+              <p className='text-gray-600 dark:text-gray-300'>
+                Built with Next.js 14, TypeScript, and modern development
+                practices
+              </p>
+            </div>
+
+            <div className='bg-white dark:bg-slate-800 rounded-xl shadow-lg p-6 text-center'>
+              <div className='w-12 h-12 bg-green-100 dark:bg-green-900 rounded-lg flex items-center justify-center mx-auto mb-4'>
+                <svg
+                  className='w-6 h-6 text-green-600 dark:text-green-400'
+                  fill='none'
+                  stroke='currentColor'
+                  viewBox='0 0 24 24'
+                >
+                  <path
+                    strokeLinecap='round'
+                    strokeLinejoin='round'
+                    strokeWidth={2}
+                    d='M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z'
+                  />
+                </svg>
+              </div>
+              <h3 className='text-xl font-semibold text-gray-900 dark:text-white mb-2'>
+                Type-Safe API
+              </h3>
+              <p className='text-gray-600 dark:text-gray-300'>
+                End-to-end type safety with tRPC and automatic API validation
+              </p>
+            </div>
+
+            <div className='bg-white dark:bg-slate-800 rounded-xl shadow-lg p-6 text-center'>
+              <div className='w-12 h-12 bg-purple-100 dark:bg-purple-900 rounded-lg flex items-center justify-center mx-auto mb-4'>
+                <svg
+                  className='w-6 h-6 text-purple-600 dark:text-purple-400'
+                  fill='none'
+                  stroke='currentColor'
+                  viewBox='0 0 24 24'
+                >
+                  <path
+                    strokeLinecap='round'
+                    strokeLinejoin='round'
+                    strokeWidth={2}
+                    d='M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z'
+                  />
+                </svg>
+              </div>
+              <h3 className='text-xl font-semibold text-gray-900 dark:text-white mb-2'>
+                Secure Auth
+              </h3>
+              <p className='text-gray-600 dark:text-gray-300'>
+                Built-in authentication system with session management
+              </p>
+            </div>
+          </div>
+        </section>
+
+        {/* Call to Action */}
+        <section className='text-center'>
+          <div className='bg-white dark:bg-slate-800 rounded-2xl shadow-xl p-8 max-w-2xl mx-auto'>
+            <h2 className='text-2xl font-bold text-gray-900 dark:text-white mb-4'>
+              Ready to Build Something Amazing?
+            </h2>
+            <p className='text-gray-600 dark:text-gray-300 mb-8'>
+              Start customizing your app by editing the pages and components.
+              Everything is ready to go!
+            </p>
+            <div className='flex flex-col sm:flex-row gap-4 justify-center'>
+              <a
+                className='inline-flex items-center justify-center px-6 py-3 border border-transparent text-base font-medium rounded-lg text-white bg-blue-600 hover:bg-blue-700 transition-colors'
+                href='https://nextjs.org/docs'
+                target='_blank'
+                rel='noopener noreferrer'
+              >
+                View Documentation
+              </a>
+              <a
+                className='inline-flex items-center justify-center px-6 py-3 border border-gray-300 dark:border-gray-600 text-base font-medium rounded-lg text-gray-700 dark:text-gray-300 bg-white dark:bg-slate-700 hover:bg-gray-50 dark:hover:bg-slate-600 transition-colors'
+                href='https://github.com/ucdavis/app-template'
+                target='_blank'
+                rel='noopener noreferrer'
+              >
+                View Source
+              </a>
+            </div>
+          </div>
+        </section>
+      </div>
     </div>
   );
 }

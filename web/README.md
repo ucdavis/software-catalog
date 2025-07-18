@@ -52,13 +52,19 @@ CAS is not working right now.
 
 This project uses PostgreSQL as the database. The Prisma ORM is used for database interactions. tRPC is used for type-safe API calls.
 
+You have a few options for making queries dpeneding on your needs:
+
+### Server Queries
+
+See `/` for an example of just a simple server-only query. This is useful for data that doesn't need to be reactive or updated on the client side. No API call is actually made over the wire, the query is executed directly on the server.
+
 ### Client Queries
 
 See `/client` for examples of just doing regular client-side queries w/ react-query.
 
 ### Prefetching
 
-See `/prefetch` for examples of prefetching data on the server and then using it in a client component.
+See `/prefetch` for examples of prefetching data on the server and then using it in a client component. These are useful for data that you want to load on the server but then use in a client component without making another API call.
 
 ### Adding new API routes (aka controllers)
 

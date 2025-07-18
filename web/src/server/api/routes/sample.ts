@@ -10,7 +10,7 @@ let count = 42;
 
 export const sampleRouter = createTRPCRouter({
   getMessage: publicProcedure.query(() => {
-    return 'Hello, world!';
+    return 'Hello, App Template!';
   }),
 
   getProtectedMessage: protectedProcedure.query(({ ctx }) => {
