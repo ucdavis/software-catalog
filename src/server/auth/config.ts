@@ -26,29 +26,18 @@ declare module 'next-auth' {
   // }
 }
 
-/* Notes on entra auth
-  - create a new app registration in entra
-  - set the redirect URI to http://localhost:3000/api/auth/callback/microsoft-entra-id
-  - add some branding and set publisher domain to ucdavis.edu
-  - create a client secret and save it
-  - clientID is the application (client) ID
-*/
-
 /**
  * Options for NextAuth.js used to configure adapters, providers, callbacks, etc.
  *
  * @see https://next-auth.js.org/configuration/options
  */
-console.log('auth env vars', {
-  AUTH_UCD_CAS_URL: env.AUTH_UCD_CAS_URL,
-  AUTH_UCD_CAS_CLIENT_ID: env.AUTH_UCD_CAS_CLIENT_ID,
-  AUTH_UCD_CAS_CLIENT_SECRET: env.AUTH_UCD_CAS_CLIENT_SECRET,
-});
 export const authConfig = {
   debug: true,
   trustHost: true,
   providers: [
     MicrosoftEntraID({
+      id: 'ucdentra',
+      name: 'UC Davis - Microsoft Entra ID',
       clientId: env.AUTH_UCD_ENTRA_CLIENT_ID,
       clientSecret: env.AUTH_UCD_ENTRA_CLIENT_SECRET,
       issuer: env.AUTH_UCD_ENTRA_ISSUER,

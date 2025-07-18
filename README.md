@@ -21,7 +21,27 @@ This is a starter template for building web applications using Next.js, created 
 - Still need to setup devcontainer plugins
 - People should run `npx auth secret` to generate a secret for auth.js for new projects
 
----
+## Auth
+
+This project uses [AuthJS](https://authjs.dev) for authentication. The configuration is located in `src/server/auth/config.ts`.
+
+You can set up authentication providers such as Microsoft Entra ID and UC Davis CAS. Make sure to configure the environment variables in your `.env` file.
+
+### Entra ID Setup
+
+- create a new app registration in entra
+- set the redirect URI to http://localhost:3000/api/auth/callback/microsoft-entra-id
+- add some branding if desired and set publisher domain to ucdavis.edu
+- create a client secret and save it
+- clientID is the application (client) ID
+- add the `AUTH_UCD_ENTRA*` env vars to your `.env.local` file
+- the issuer is `https://login.microsoftonline.com/a8046f64-66c0-4f00-9046-c8daf92ff62b/v2.0` where that ID is our UCD Azure AD tenant ID
+
+### CAS Setup
+
+CAS is not working right now.
+
+==============================
 
 Below is the standard Next.js README content, which is included in the project.
 
