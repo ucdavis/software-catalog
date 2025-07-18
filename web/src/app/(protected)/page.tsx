@@ -52,7 +52,7 @@ export default async function Home() {
         {/* Features Grid */}
         <section className='mb-16'>
           <h2 className='text-3xl font-bold text-center text-gray-900 dark:text-white mb-12'>
-            What's Included
+            What is Included
           </h2>
           <div className='grid md:grid-cols-3 gap-8 max-w-4xl mx-auto'>
             <div className='bg-white dark:bg-slate-800 rounded-xl shadow-lg p-6 text-center'>
