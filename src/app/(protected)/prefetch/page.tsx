@@ -4,7 +4,7 @@ import PrefetchForm from './prefetchForm';
 export default async function PrefetchPage() {
   // this will "start" the query on the server and automatically hydrate it on the client
   // note we need to wrap the component in HydrateClient to use the prefetch
-  prefetch(trpc.sample.getCount.queryOptions());
+  prefetch(trpc.sample.getUsers.queryOptions());
   return (
     <HydrateClient>
       <div className='flex items-center justify-center min-h-screen bg-gray-50'>
