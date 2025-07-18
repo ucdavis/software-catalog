@@ -27,6 +27,12 @@ This project uses [AuthJS](https://authjs.dev) for authentication. The configura
 
 You can set up authentication providers such as Microsoft Entra ID and UC Davis CAS. Make sure to configure the environment variables in your `.env` file.
 
+The login page `src/app/(public)/login/page.tsx` is used for the sign-in process. You can customize this page as needed or make it auto login if you want.
+
+Any page under `src/app/(protected)` will require authentication to access.
+
+Roles are up to you but if you want to add them to the session take a look at [the AuthJS documentation](https://authjs.dev/guides/role-based-access-control).
+
 ### Entra ID Setup
 
 - create a new app registration in entra

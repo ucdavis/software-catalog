@@ -34,9 +34,12 @@ declare module 'next-auth' {
 export const authConfig = {
   debug: true,
   trustHost: true,
+  pages: {
+    signIn: '/login',
+  },
   providers: [
     MicrosoftEntraID({
-      id: 'ucdentra',
+      id: 'microsoft-entra-id',
       name: 'UC Davis - Microsoft Entra ID',
       clientId: env.AUTH_UCD_ENTRA_CLIENT_ID,
       clientSecret: env.AUTH_UCD_ENTRA_CLIENT_SECRET,
