@@ -51,6 +51,26 @@ CAS is not working right now.
 
 This project uses PostgreSQL as the database. The Prisma ORM is used for database interactions. tRPC is used for type-safe API calls.
 
+### Client Queries
+
+See `/client` for examples of just doing regular client-side queries w/ react-query.
+
+### Prefetching
+
+See `/prefetch` for examples of prefetching data on the server and then using it in a client component.
+
+### Adding new API routes (aka controllers)
+
+Routes are in `src/server/api/routes/`. You can create new files here to define your API endpoints.
+
+Each route is given the db and user session as context.
+
+### Route protection
+
+Inside `src/server/trpc/trpc.ts` we've created `publicProcedure` and `protectedProcedure` to help with route protection. You can create your own procedures as needed, ex: `adminProcedure` or `editorProcedure`. Routes are created as a specific type of procedure and will thus run whatever checks you have defined for that procedure.
+
+Alternately (or additionally), if you include the user roles in the auth session you can just check the session in your route handler.
+
 ==============================
 
 Below is the standard Next.js README content, which is included in the project.
