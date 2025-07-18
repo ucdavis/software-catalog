@@ -6,7 +6,7 @@ import {
 } from '@trpc/tanstack-react-query';
 import { dehydrate, HydrationBoundary } from '@tanstack/react-query';
 
-import { appRouter, type AppRouter } from './router';
+import { appRouter, type AppRouter } from '../api/router';
 
 import { createQueryClient } from './query-client';
 

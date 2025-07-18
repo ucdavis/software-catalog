@@ -2,7 +2,7 @@ import type { inferRouterInputs, inferRouterOutputs } from '@trpc/server';
 
 import type { AppRouter } from './router';
 import { appRouter } from './router';
-import { createTRPCContext } from './trpc';
+import { createTRPCContext } from '../trpc/trpc';
 
 /**
  * Inference helpers for input types
