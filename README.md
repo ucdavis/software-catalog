@@ -47,6 +47,10 @@ Roles are up to you but if you want to add them to the session take a look at [t
 
 CAS is not working right now.
 
+## Database & Querying
+
+This project uses PostgreSQL as the database. The Prisma ORM is used for database interactions. tRPC is used for type-safe API calls.
+
 ==============================
 
 Below is the standard Next.js README content, which is included in the project.
