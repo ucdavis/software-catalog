@@ -1,6 +1,7 @@
 import { PrismaClient } from '@prisma/client';
 import { env } from './env';
 
+// if you don't want to log all queries, you can change the log level here
 const createPrismaClient = () =>
   new PrismaClient({
     log:

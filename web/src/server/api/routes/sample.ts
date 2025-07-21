@@ -5,11 +5,13 @@ import {
   protectedProcedure,
   publicProcedure,
 } from '@/server/trpc/trpc';
+import { logger } from '@/lib/logger';
 
 let count = 42;
 
 export const sampleRouter = createTRPCRouter({
   getMessage: publicProcedure.query(() => {
+    logger.info('getMessage called');
     return 'Hello, App Template!';
   }),
 
