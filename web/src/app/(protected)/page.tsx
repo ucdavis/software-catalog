@@ -143,7 +143,7 @@ export default async function Home() {
             <div className='bg-slate-900 text-left rounded-lg p-4 mb-6 overflow-x-auto'>
               <pre className='text-sm text-blue-200'>
                 <code>
-                  npx create-next-app -e https://github.com/ucdavis/app-template
+                  git clone https://github.com/ucdavis/app-template/ my-app
                 </code>
               </pre>
             </div>
