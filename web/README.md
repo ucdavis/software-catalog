@@ -103,6 +103,27 @@ Inside `src/server/trpc/trpc.ts` we've created `publicProcedure` and `protectedP
 
 Alternately (or additionally), if you include the user roles in the auth session you can just check the session in your route handler.
 
+## Logging
+
+We use Pino for logging. The logger is configured in `src/lib/logger.ts`.
+
+### Logger Configuration
+
+The logger is set up to log to both stdout and Elasticsearch in production. In development, it logs to stdout with pretty printing.
+
+If you want to log to Elasticsearch, set the `LOG_ELASTIC_URL` environment variable in your `.env.local` file.
+
+### Using the Logger
+
+You can use the logger in your code like this:
+
+```typescript
+import { logger } from '@/lib/logger';
+
+logger.info('Hello, world!');
+logger.error('An error occurred', { error: new Error('Something went wrong') });
+```
+
 ==============================
 
 Below is the standard Next.js README content, which is included in the project.
