@@ -1,6 +1,9 @@
 import { z } from 'zod';
 
 const envSchema = z.object({
+  // General
+  APP_NAME: z.string().min(1).default('app-template'),
+
   // Database
   DATABASE_URL: z.url(),
 
@@ -18,6 +21,10 @@ const envSchema = z.object({
   AUTH_UCD_ENTRA_CLIENT_ID: z.string().min(1),
   AUTH_UCD_ENTRA_CLIENT_SECRET: z.string().min(1),
   AUTH_UCD_ENTRA_ISSUER: z.string().min(1),
+
+  // Logging
+  LOG_LEVEL: z.enum(['debug', 'info', 'warn', 'error']).default('info'),
+  LOG_ELASTIC_URL: z.url().optional().default('http://localhost:9200'),
 
   // Node environment
   NODE_ENV: z

@@ -1,14 +1,8 @@
-import { logger } from '@/lib/logger';
-
+// Setup logging for global crash handlers
+// This will run in Node.js and edge runtimes but we only want to actually load the crash handlers in Node.js
 export async function register() {
   if (process.env.NEXT_RUNTIME !== 'nodejs') return;
 
-  const shutdown = async (err: unknown) => {
-    logger.fatal({ err }, 'uncaught'); // includes context automatically
-    // flush if using async transports
-    await logger.flush();
-    process.exit(1);
-  };
-  process.on('uncaughtException', shutdown);
-  process.on('unhandledRejection', shutdown);
+  const { initCrashHandlers } = await import('./instrumentation.node');
+  initCrashHandlers();
 }

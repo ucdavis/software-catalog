@@ -16,6 +16,7 @@
   },
   "dependencies": {
     "@auth/prisma-adapter": "^2.10.0",
+    "@elastic/ecs-pino-format": "^1.5.0",
     "@prisma/client": "^6.12.0",
     "@tanstack/react-query": "^5.83.0",
     "@trpc/client": "^11.4.3",
@@ -24,6 +25,7 @@
     "next": "15.4.1",
     "next-auth": "^5.0.0-beta.29",
     "pino": "^9.7.0",
+    "pino-elasticsearch": "^8.1.0",
     "react": "19.1.0",
     "react-dom": "19.1.0",
     "superjson": "^2.2.2",
