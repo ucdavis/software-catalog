@@ -1,11 +1,11 @@
 @import 'tailwindcss';
 @plugin "daisyui";
-@import './imports.css';
+@import '@ucdavis/gunrock-tailwind/imports.css';
 /* @plugin "daisyui/theme" {
   name: 'gunrock';
   --color-primary: var(--color-ucd-doubledecker);
-} */
+}
 
-/* @theme inline {
+@theme inline {
   --color-primary-color: var(--color-ucd-recpool);
 } */
