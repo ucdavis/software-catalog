@@ -1,15 +1,6 @@
-import { redirect } from 'next/navigation';
-import { auth } from '@/server/auth';
 import { BeakerIcon } from '@heroicons/react/24/solid';
 
 export default async function LoginPage() {
-  const session = await auth();
-
-  // If already authenticated, redirect to home
-  if (session) {
-    redirect('/');
-  }
-
   return (
     <div className='min-h-screen flex items-center justify-center  py-12 px-4 sm:px-6 lg:px-8'>
       <div className='w-full max-w-1/2 space-y-8'>
