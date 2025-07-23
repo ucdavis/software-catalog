@@ -11,7 +11,7 @@ export default async function LoginPage() {
   }
 
   return (
-    <div className='min-h-screen flex items-center justify-center bg-gray-50 dark:bg-gray-900 py-12 px-4 sm:px-6 lg:px-8'>
+    <div className='min-h-screen flex items-center justify-center  py-12 px-4 sm:px-6 lg:px-8'>
       <div className='max-w-md w-full space-y-8'>
         <div>
           <h2 className='mt-6 text-center text-3xl font-extrabold text-gray-900'>
@@ -20,9 +20,61 @@ export default async function LoginPage() {
           <p className='mt-2 text-center text-sm text-gray-600'>
             Choose your preferred sign-in method
           </p>
-          <p className='text-primary-white'>primary-white</p>
-          <p className='text-ucd-doubledecker'>ucd-doubledeck</p>
-          <p className='text-primary-color'>ucd-doubledeck</p>
+          <h1>Heading 1</h1>
+          <h2>Heading 2</h2>
+          <h3>Heading 3</h3>
+          <h4>Heading 4</h4>
+          <h5>Heading 5</h5>
+          <h6>Heading 6</h6>
+
+          <p>Paragraph text</p>
+
+          <div className='bg-gray-900 p-12'>
+            <h1 className='text-darkmode-primary-font'>
+              heading 1 primary dark
+            </h1>
+          </div>
+
+          <h2>Unordered List</h2>
+          <ul>
+            <li>List item one</li>
+            <li>List item two</li>
+            <li>List item three</li>
+          </ul>
+
+          <h2>Ordered List</h2>
+          <ol>
+            <li>Step one</li>
+            <li>Step two</li>
+            <li>Step three</li>
+          </ol>
+
+          <h2>Buttons</h2>
+          <button>Primary Button</button>
+          <button>Secondary Button</button>
+
+          <button className='btn btn-xs'>Xsmall</button>
+          <button className=' btn-primary btn-sm'>Small</button>
+          <button className='btn'>Medium</button>
+          <button className=' btn-seconday btn-lg'>Large</button>
+          <button className='btn btn-xl'>Xlarge</button>
+
+          <div className='badge badge-primary'>Primary</div>
+          <div className='badge badge-secondary'>Secondary</div>
+          <div className='badge badge-accent'>Accent</div>
+          <div className='badge badge-neutral'>Neutral</div>
+          <div className='badge badge-info'>Info</div>
+          <div className='badge badge-success'>Success</div>
+          <div className='badge badge-warning'>Warning</div>
+          <div className='badge badge-error'>Error</div>
+
+          <div className='badge badge-outline badge-primary'>Primary</div>
+          <div className='badge badge-outline badge-secondary'>Secondary</div>
+          <div className='badge badge-outline badge-accent'>Accent</div>
+          <div className='badge badge-outline badge-info'>Info</div>
+          <div className='badge badge-outline badge-success'>Success</div>
+          <div className='badge badge-outline badge-warning'>Warning</div>
+          <div className='badge badge-outline badge-error'>Error</div>
         </div>
 
         <div className='mt-8 space-y-4'>

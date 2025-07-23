@@ -1,6 +1,9 @@
 @import 'tailwindcss';
+
 @import './fonts.css';
 @import './colors.css';
+
+@plugin "daisyui";
 
 @theme inline {
   --color-primary-color: var(--color-ucd-recpool);

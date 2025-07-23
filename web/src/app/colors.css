@@ -1,10 +1,14 @@
 @theme {
-  --color-primary-font: oklch(0.18 0 0);
-  --color-secondary-font: oklch(0.18 0 0);
-  --color-tertiary-font: oklch(0.18 0 0);
-  --color-primary-white: oklch(0.99 0 0);
-  --color-secondary-white: oklch(0.99 0 0);
+  /* standard colors */
+  --color-primary-font: rgba(31, 31, 31, 0.98);
+  --color-secondary-font: rgba(31, 31, 31, 0.75);
+  --color-tertirary-font: rgba(31, 31, 31, 0.55);
 
+  --color-darkmode-primary-font: rgba(254, 254, 254, 0.95);
+  --color-darkmode-secondary-font: rgba(254, 254, 254, 0.6);
+  --color-darkmode-tertirary-font: rgba(254, 254, 254, 0.5);
+
+  /* UC Davis colors */
   --color-ucd-recpool: oklch(0.87 0.21 214.2);
   --color-ucd-tahoe: oklch(0.72 0.25 231.1);
   --color-ucd-gunrock: oklch(0.46 0.15 259.4);
