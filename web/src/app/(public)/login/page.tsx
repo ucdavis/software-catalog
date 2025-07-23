@@ -1,6 +1,7 @@
 import { signIn } from '@/server/auth';
 import { redirect } from 'next/navigation';
 import { auth } from '@/server/auth';
+import { BeakerIcon } from '@heroicons/react/24/outline';
 
 export default async function LoginPage() {
   const session = await auth();
@@ -11,13 +12,12 @@ export default async function LoginPage() {
   }
 
   return (
-    <div className='min-h-screen flex items-center justify-center bg-gray-50 dark:bg-gray-900 py-12 px-4 sm:px-6 lg:px-8'>
+    <div className='min-h-screen flex items-center justify-center py-12 px-4 sm:px-6 lg:px-8'>
       <div className='max-w-md w-full space-y-8'>
         <div>
-          <h2 className='mt-6 text-center text-3xl font-extrabold text-gray-900 dark:text-white'>
-            Sign in to your account
-          </h2>
-          <p className='mt-2 text-center text-sm text-gray-600 dark:text-gray-400'>
+          <BeakerIcon className='size-6 text-ucd-cabernet' />
+          <h2 className='mt-6 text-center'>Sign in to your account</h2>
+          <p className='mt-2 text-center'>
             Choose your preferred sign-in method
           </p>
         </div>
@@ -29,10 +29,7 @@ export default async function LoginPage() {
               await signIn('microsoft-entra-id', { redirectTo: '/' });
             }}
           >
-            <button
-              type='submit'
-              className='group relative w-full flex justify-center py-3 px-4 border border-transparent text-sm font-medium rounded-md text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 transition-colors duration-200'
-            >
+            <button type='submit' className='btn btn-primary w-full'>
               <svg
                 className='w-5 h-5 mr-2'
                 viewBox='0 0 23 23'
@@ -50,10 +47,7 @@ export default async function LoginPage() {
               await signIn('ucdcas', { redirectTo: '/' });
             }}
           >
-            <button
-              type='submit'
-              className='group relative w-full flex justify-center py-3 px-4 border border-gray-300 dark:border-gray-600 text-sm font-medium rounded-md text-gray-700 dark:text-gray-200 bg-white dark:bg-gray-800 hover:bg-gray-50 dark:hover:bg-gray-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 transition-colors duration-200'
-            >
+            <button type='submit' className='btn btn-secondary w-full'>
               <svg
                 className='w-5 h-5 mr-2'
                 viewBox='0 0 24 24'
@@ -64,19 +58,6 @@ export default async function LoginPage() {
               Sign in with UC Davis CAS
             </button>
           </form>
-        </div>
-
-        <div className='mt-6'>
-          <div className='relative'>
-            <div className='absolute inset-0 flex items-center'>
-              <div className='w-full border-t border-gray-300 dark:border-gray-600' />
-            </div>
-            <div className='relative flex justify-center text-sm'>
-              <span className='px-2 bg-gray-50 dark:bg-gray-900 text-gray-500 dark:text-gray-400'>
-                Secure authentication
-              </span>
-            </div>
-          </div>
         </div>
 
         <div className='text-center text-xs text-gray-500 dark:text-gray-400'>

@@ -1,24 +1,11 @@
 @import 'tailwindcss';
-
-:root {
-  --background: #ffffff;
-  --foreground: #171717;
+@plugin "daisyui";
+@import '@ucdavis/gunrock-tailwind/imports.css';
+/* @plugin "daisyui/theme" {
+  name: 'gunrock';
+  --color-primary: var(--color-ucd-doubledecker);
 }
 
 @theme inline {
-  --color-background: var(--background);
-  --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
-}
-
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
-  }
-}
-
-body {
-  font-family: Arial, Helvetica, sans-serif;
-}
+  --color-primary-color: var(--color-ucd-recpool);
+} */
