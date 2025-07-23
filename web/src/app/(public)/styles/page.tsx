@@ -13,7 +13,6 @@ export default async function LoginPage() {
           <p>This is a paragraph of base text.</p>
           <p>This is small, muted text.</p>
         </section>
-
         {/* Buttons */}
         <section className='space-x-2'>
           <button className='btn btn-primary'>Primary</button>
@@ -22,7 +21,6 @@ export default async function LoginPage() {
           <button className='btn btn-outline'>Outline</button>
           <button className='btn btn-disabled'>Disabled</button>
         </section>
-
         {/* Inputs */}
         <section className='space-y-2'>
           <input
@@ -30,6 +28,48 @@ export default async function LoginPage() {
             placeholder='Text input'
             className='input input-bordered w-full max-w-xs'
           />
+          <fieldset className='fieldset'>
+            <legend className='fieldset-legend'>Page title</legend>
+            <input
+              type='text'
+              className='input'
+              placeholder='My awesome page'
+            />
+            <p className='label'>
+              You can edit page title later on from settings
+            </p>
+          </fieldset>
+          <fieldset className='fieldset bg-base-200 border-base-300 rounded-box w-xs border p-4'>
+            <legend className='fieldset-legend'>Page details</legend>
+
+            <label className='label'>Title</label>
+            <input
+              type='text'
+              className='input'
+              placeholder='My awesome page'
+            />
+
+            <label className='label'>Slug</label>
+            <input
+              type='text'
+              className='input'
+              placeholder='my-awesome-page'
+            />
+
+            <label className='label'>Author</label>
+            <input type='text' className='input' placeholder='Name' />
+          </fieldset>
+          <fieldset className='fieldset bg-base-200 border-base-300 rounded-box w-xs border p-4'>
+            <legend className='fieldset-legend'>Settings</legend>
+            <div className='join'>
+              <input
+                type='text'
+                className='input join-item'
+                placeholder='Product name'
+              />
+              <button className='btn join-item'>save</button>
+            </div>
+          </fieldset>
         </section>
 
         {/* Cards */}
@@ -50,7 +90,6 @@ export default async function LoginPage() {
             </div>
           </div>
         </section>
-
         {/* Alerts */}
         <section className='space-y-2'>
           <div className='alert alert-info'>
@@ -66,7 +105,6 @@ export default async function LoginPage() {
             <span>Error alert message</span>
           </div>
         </section>
-
         {/* Badges */}
         <section className='space-x-2'>
           <div className='badge badge-primary'>Primary</div>
