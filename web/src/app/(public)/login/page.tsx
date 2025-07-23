@@ -1,6 +1,7 @@
 import { signIn } from '@/server/auth';
 import { redirect } from 'next/navigation';
 import { auth } from '@/server/auth';
+import { BeakerIcon } from '@heroicons/react/24/outline';
 
 export default async function LoginPage() {
   const session = await auth();
@@ -14,6 +15,7 @@ export default async function LoginPage() {
     <div className='min-h-screen flex items-center justify-center py-12 px-4 sm:px-6 lg:px-8'>
       <div className='max-w-md w-full space-y-8'>
         <div>
+          <BeakerIcon className='size-6 text-ucd-cabernet' />
           <h2 className='mt-6 text-center'>Sign in to your account</h2>
           <p className='mt-2 text-center'>
             Choose your preferred sign-in method
