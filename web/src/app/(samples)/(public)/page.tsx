@@ -1,4 +1,5 @@
 import Image from 'next/image';
+import Link from 'next/link';
 
 export default async function Home() {
   return (
@@ -9,7 +10,7 @@ export default async function Home() {
           <div className='mb-8'>
             <Image
               className='mx-auto dark:invert'
-              src='/caes_dark.svg'
+              src='/caes.svg'
               alt='App Logo'
               width={419}
               height={77}
@@ -43,12 +44,12 @@ export default async function Home() {
                 This page demonstrates data prefetching with tRPC and React
                 Query.
               </p>
-              <a
-                href='/samples/public/prefetch'
+              <Link
+                href='/prefetch'
                 className='inline-block px-6 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors'
               >
                 Go to Prefetch Page
-              </a>
+              </Link>
             </div>
             <div className='bg-white dark:bg-slate-800 rounded-xl shadow-lg p-6'>
               <h3 className='text-xl font-semibold text-gray-900 dark:text-white mb-2'>
@@ -58,12 +59,12 @@ export default async function Home() {
                 This page shows how to handle client-side data fetching and form
                 submission.
               </p>
-              <a
-                href='/samples/public/client'
+              <Link
+                href='/client'
                 className='inline-block px-6 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors'
               >
                 Go to Client Page
-              </a>
+              </Link>
             </div>
             <div className='bg-white dark:bg-slate-800 rounded-xl shadow-lg p-6'>
               <h3 className='text-xl font-semibold text-gray-900 dark:text-white mb-2'>
@@ -72,12 +73,12 @@ export default async function Home() {
               <p className='text-gray-600 dark:text-gray-300 mb-4'>
                 This page requires login to access.
               </p>
-              <a
+              <Link
                 href='/protected'
                 className='inline-block px-6 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors'
               >
                 Go to Protected Page
-              </a>
+              </Link>
             </div>
           </div>
         </section>
