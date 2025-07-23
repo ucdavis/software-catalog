@@ -14,7 +14,7 @@ export default function RootLayout({
 }>) {
   return (
     <html lang='en'>
-      <body className={`antialiased`}>
+      <body data-theme='gunrock' className={`antialiased`}>
         <TRPCReactProvider>{children}</TRPCReactProvider>
       </body>
     </html>
