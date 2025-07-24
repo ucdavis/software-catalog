@@ -48,28 +48,14 @@ export default async function Home() {
             </div>
             <div className='card bg-base-100 shadow-md'>
               <div className='card-body'>
-                <h3 className='card-title'>Prefetching Example</h3>
+                <h3 className='card-title'>Form Example</h3>
                 <p className='text-base-content/70'>
-                  This page demonstrates data prefetching with tRPC and React
-                  Query.
+                  This page demonstrates custom form components with TanStack
+                  Form, Zod validation, and real-time async validation.
                 </p>
                 <div className='card-actions justify-end'>
-                  <Link href='/prefetch' className='btn btn-primary'>
-                    Go to Prefetch Page
-                  </Link>
-                </div>
-              </div>
-            </div>
-            <div className='card bg-base-100 shadow-md'>
-              <div className='card-body'>
-                <h3 className='card-title'>Client-Side Example</h3>
-                <p className='text-base-content/70'>
-                  This page shows how to handle client-side data fetching and
-                  form submission.
-                </p>
-                <div className='card-actions justify-end'>
-                  <Link href='/client' className='btn btn-primary'>
-                    Go to Client Page
+                  <Link href='/form' className='btn btn-primary'>
+                    Go to Form Page
                   </Link>
                 </div>
               </div>
@@ -97,6 +83,34 @@ export default async function Home() {
                 <div className='card-actions justify-end'>
                   <Link href='/protected' className='btn btn-primary'>
                     Go to Protected Page
+                  </Link>
+                </div>
+              </div>
+            </div>
+            <div className='card bg-base-100 shadow-md'>
+              <div className='card-body'>
+                <h3 className='card-title'>Queries: Prefetching Example</h3>
+                <p className='text-base-content/70'>
+                  This page demonstrates data prefetching with tRPC and React
+                  Query.
+                </p>
+                <div className='card-actions justify-end'>
+                  <Link href='/prefetch' className='btn btn-primary'>
+                    Go to Prefetch Page
+                  </Link>
+                </div>
+              </div>
+            </div>
+            <div className='card bg-base-100 shadow-md'>
+              <div className='card-body'>
+                <h3 className='card-title'>Queries: Client-Side Example</h3>
+                <p className='text-base-content/70'>
+                  This page shows how to handle client-side data fetching and
+                  form submission.
+                </p>
+                <div className='card-actions justify-end'>
+                  <Link href='/client' className='btn btn-primary'>
+                    Go to Client Page
                   </Link>
                 </div>
               </div>
