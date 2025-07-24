@@ -1,0 +1,229 @@
+'use client';
+
+import { useAppForm } from '@/shared/forms/formContext';
+
+/**
+ * Form sample page demonstrating the custom form components with TanStack Form
+ */
+export default function FormPage() {
+  const form = useAppForm({
+    defaultValues: {
+      firstName: 'John',
+      lastName: 'Doe',
+      email: '',
+      message: '',
+    },
+    onSubmit: async ({ value }) => {
+      // Simulate API call
+      console.log('Form submitted with values:', value);
+      await new Promise((resolve) => setTimeout(resolve, 2000));
+      alert(
+        `Form submitted successfully!\n\nData: ${JSON.stringify(value, null, 2)}`
+      );
+    },
+  });
+
+  return (
+    <div className='min-h-screen bg-base-100'>
+      <div className='container mx-auto px-4 py-16'>
+        {/* Header Section */}
+        <header className='text-center mb-16'>
+          <h1 className='text-5xl font-bold mb-4'>Form Example</h1>
+          <p className='text-xl max-w-2xl mx-auto text-base-content/70'>
+            This page demonstrates our custom form components built with
+            TanStack Form. The form includes validation, loading states, and
+            modern styling with DaisyUI.
+          </p>
+        </header>
+
+        {/* Form Section */}
+        <section className='mb-16'>
+          <div className='max-w-2xl mx-auto'>
+            <div className='card bg-base-100 shadow-xl'>
+              <div className='card-body'>
+                <h2 className='card-title text-2xl mb-6'>Contact Form</h2>
+                <p className='text-base-content/70 mb-6'>
+                  Fill out the form below to see the custom form components in
+                  action. Try submitting to see the loading state and
+                  validation.
+                </p>
+                <form
+                  onSubmit={(e) => {
+                    e.preventDefault();
+                    form.handleSubmit();
+                  }}
+                >
+                  <form.AppForm>
+                    <div className='space-y-6'>
+                      <form.AppField name='firstName'>
+                        {(f) => <f.TextField label='First Name' />}
+                      </form.AppField>
+
+                      {/* Last Name Field */}
+                      <form.AppField name='lastName'>
+                        {(f) => <f.TextField label='Last Name' />}
+                      </form.AppField>
+
+                      {/* Email Field */}
+                      <form.AppField name='email'>
+                        {(f) => <f.TextField label='Email Address' />}
+                      </form.AppField>
+
+                      {/* Message Field */}
+                      <form.AppField name='message'>
+                        {(f) => <f.TextField label='Message' />}
+                      </form.AppField>
+
+                      {/* Submit Button */}
+                      <form.SubscribeButton label='Submit' />
+                    </div>
+                  </form.AppForm>
+                </form>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        {/* Features Section */}
+        <section className='mb-16'>
+          <h2 className='text-3xl font-bold text-center mb-12'>
+            Form Features
+          </h2>
+          <div className='grid md:grid-cols-2 lg:grid-cols-3 gap-8 max-w-4xl mx-auto'>
+            <div className='card bg-base-100 shadow-md text-center'>
+              <div className='card-body'>
+                <div className='w-12 h-12 bg-primary/20 rounded-lg flex items-center justify-center mx-auto mb-4'>
+                  <svg
+                    className='w-6 h-6 text-primary'
+                    fill='none'
+                    stroke='currentColor'
+                    viewBox='0 0 24 24'
+                  >
+                    <path
+                      strokeLinecap='round'
+                      strokeLinejoin='round'
+                      strokeWidth={2}
+                      d='M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z'
+                    />
+                  </svg>
+                </div>
+                <h3 className='card-title justify-center mb-2'>Validation</h3>
+                <p className='text-base-content/70'>
+                  Real-time validation with async support for complex checks
+                </p>
+              </div>
+            </div>
+
+            <div className='card bg-base-100 shadow-md text-center'>
+              <div className='card-body'>
+                <div className='w-12 h-12 bg-success/20 rounded-lg flex items-center justify-center mx-auto mb-4'>
+                  <svg
+                    className='w-6 h-6 text-success'
+                    fill='none'
+                    stroke='currentColor'
+                    viewBox='0 0 24 24'
+                  >
+                    <path
+                      strokeLinecap='round'
+                      strokeLinejoin='round'
+                      strokeWidth={2}
+                      d='M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15'
+                    />
+                  </svg>
+                </div>
+                <h3 className='card-title justify-center mb-2'>
+                  Loading States
+                </h3>
+                <p className='text-base-content/70'>
+                  Beautiful loading indicators during form submission
+                </p>
+              </div>
+            </div>
+
+            <div className='card bg-base-100 shadow-md text-center'>
+              <div className='card-body'>
+                <div className='w-12 h-12 bg-secondary/20 rounded-lg flex items-center justify-center mx-auto mb-4'>
+                  <svg
+                    className='w-6 h-6 text-secondary'
+                    fill='none'
+                    stroke='currentColor'
+                    viewBox='0 0 24 24'
+                  >
+                    <path
+                      strokeLinecap='round'
+                      strokeLinejoin='round'
+                      strokeWidth={2}
+                      d='M7 21a4 4 0 01-4-4V5a2 2 0 012-2h4a2 2 0 012 2v12a4 4 0 01-4 4zM21 5a2 2 0 00-2-2h-4a2 2 0 00-2 2v12a4 4 0 004 4h4a2 2 0 002-2V5z'
+                    />
+                  </svg>
+                </div>
+                <h3 className='card-title justify-center mb-2'>Type Safe</h3>
+                <p className='text-base-content/70'>
+                  Full TypeScript support with type-safe form handling
+                </p>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        {/* Examples Section */}
+        <section className='mb-16'>
+          <h2 className='text-3xl font-bold text-center mb-12'>
+            Try These Examples
+          </h2>
+          <div className='max-w-4xl mx-auto'>
+            <div className='grid md:grid-cols-2 gap-8'>
+              <div className='card bg-base-100 shadow-md'>
+                <div className='card-body'>
+                  <h3 className='card-title mb-4'>Validation Testing</h3>
+                  <ul className='space-y-2 text-sm'>
+                    <li className='flex items-center'>
+                      <span className='text-primary mr-2'>•</span>
+                      Leave fields empty to see required validation
+                    </li>
+                    <li className='flex items-center'>
+                      <span className='text-primary mr-2'>•</span>
+                      Enter &quot;error&quot; in first name for async validation
+                    </li>
+                    <li className='flex items-center'>
+                      <span className='text-primary mr-2'>•</span>
+                      Enter invalid email format
+                    </li>
+                    <li className='flex items-center'>
+                      <span className='text-primary mr-2'>•</span>
+                      Write a message shorter than 10 characters
+                    </li>
+                  </ul>
+                </div>
+              </div>
+
+              <div className='card bg-base-100 shadow-md'>
+                <div className='card-body'>
+                  <h3 className='card-title mb-4'>Form Behavior</h3>
+                  <ul className='space-y-2 text-sm'>
+                    <li className='flex items-center'>
+                      <span className='text-success mr-2'>•</span>
+                      Form starts with default values
+                    </li>
+                    <li className='flex items-center'>
+                      <span className='text-success mr-2'>•</span>
+                      Submission shows loading state
+                    </li>
+                    <li className='flex items-center'>
+                      <span className='text-success mr-2'>•</span>
+                      Data is logged to console
+                    </li>
+                    <li className='flex items-center'>
+                      <span className='text-success mr-2'>•</span>
+                      Success message shows form data
+                    </li>
+                  </ul>
+                </div>
+              </div>
+            </div>
+          </div>
+        </section>
+      </div>
+    </div>
+  );
+}
