@@ -1,6 +1,11 @@
 import { useFieldContext } from './formContext';
 
-export function TextField({ label }: { label: string }) {
+interface TextFieldProps {
+  label: string;
+  placeholder?: string;
+}
+
+export function TextField({ label, placeholder }: TextFieldProps) {
   const field = useFieldContext<string>();
   const hasError = !field.state.meta.isValid;
 
@@ -11,7 +16,7 @@ export function TextField({ label }: { label: string }) {
       </label>
       <input
         type='text'
-        placeholder={`Enter ${label.toLowerCase()}`}
+        placeholder={placeholder ?? `Enter ${label.toLowerCase()}`}
         className={`input input-bordered w-full ${
           hasError ? 'input-error' : ''
         }`}

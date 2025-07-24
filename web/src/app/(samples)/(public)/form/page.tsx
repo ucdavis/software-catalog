@@ -11,7 +11,6 @@ export default function FormPage() {
       firstName: 'John',
       lastName: 'Doe',
       email: '',
-      message: '',
     },
     onSubmit: async ({ value }) => {
       // Simulate API call
@@ -66,12 +65,12 @@ export default function FormPage() {
 
                       {/* Email Field */}
                       <form.AppField name='email'>
-                        {(f) => <f.TextField label='Email Address' />}
-                      </form.AppField>
-
-                      {/* Message Field */}
-                      <form.AppField name='message'>
-                        {(f) => <f.TextField label='Message' />}
+                        {(f) => (
+                          <f.TextField
+                            label='Email Address'
+                            placeholder='Enter your email address'
+                          />
+                        )}
                       </form.AppField>
 
                       {/* Submit Button */}
