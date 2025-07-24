@@ -13,6 +13,7 @@ interface DataTableProps<TData extends object> {
   data: TData[];
   columns: ColumnDef<TData>[];
   initialState?: InitialTableState; // Optional initial state for the table, use for stuff like setting page size or sorting
+  globalFilter?: 'left' | 'right' | 'none'; // Controls the position of the search box
   // ...any other props, initial state?, export? pages? filter? sorting?
 }
 
@@ -20,6 +21,7 @@ export const DataTable = <TData extends object>({
   data,
   columns,
   initialState,
+  globalFilter = 'right',
 }: DataTableProps<TData>) => {
   const table = useReactTable({
     data,
@@ -35,49 +37,53 @@ export const DataTable = <TData extends object>({
 
   return (
     <div className='space-y-4'>
-      <div className='flex items-center justify-between'>
-        <label className='input input-bordered flex items-center gap-2 w-full max-w-sm'>
-          <svg
-            className='h-[1em] opacity-50'
-            xmlns='http://www.w3.org/2000/svg'
-            viewBox='0 0 24 24'
-          >
-            <g
-              strokeLinejoin='round'
-              strokeLinecap='round'
-              strokeWidth='2.5'
-              fill='none'
-              stroke='currentColor'
+      {globalFilter !== 'none' && (
+        <div
+          className={`flex items-center ${globalFilter === 'right' ? 'justify-end' : 'justify-start'}`}
+        >
+          <label className='input input-bordered flex items-center gap-2 w-full max-w-sm'>
+            <svg
+              className='h-[1em] opacity-50'
+              xmlns='http://www.w3.org/2000/svg'
+              viewBox='0 0 24 24'
             >
-              <circle cx='11' cy='11' r='8'></circle>
-              <path d='m21 21-4.3-4.3'></path>
-            </g>
-          </svg>
-          <input
-            type='text'
-            className='grow'
-            placeholder='Search all columns...'
-            value={table.getState().globalFilter ?? ''}
-            onChange={(e) => table.setGlobalFilter(e.target.value)}
-          />
-          {table.getState().globalFilter && (
-            <button
-              onClick={() => table.setGlobalFilter('')}
-              className='btn btn-ghost btn-sm btn-circle'
-              type='button'
-            >
-              <svg
-                className='h-4 w-4'
-                xmlns='http://www.w3.org/2000/svg'
-                viewBox='0 0 16 16'
-                fill='currentColor'
+              <g
+                strokeLinejoin='round'
+                strokeLinecap='round'
+                strokeWidth='2.5'
+                fill='none'
+                stroke='currentColor'
               >
-                <path d='M5.28 4.22a.75.75 0 0 0-1.06 1.06L6.94 8l-2.72 2.72a.75.75 0 1 0 1.06 1.06L8 9.06l2.72 2.72a.75.75 0 1 0 1.06-1.06L9.06 8l2.72-2.72a.75.75 0 0 0-1.06-1.06L8 6.94 5.28 4.22Z' />
-              </svg>
-            </button>
-          )}
-        </label>
-      </div>
+                <circle cx='11' cy='11' r='8'></circle>
+                <path d='m21 21-4.3-4.3'></path>
+              </g>
+            </svg>
+            <input
+              type='text'
+              className='grow'
+              placeholder='Search all columns...'
+              value={table.getState().globalFilter ?? ''}
+              onChange={(e) => table.setGlobalFilter(e.target.value)}
+            />
+            {table.getState().globalFilter && (
+              <button
+                onClick={() => table.setGlobalFilter('')}
+                className='btn btn-ghost btn-sm btn-circle'
+                type='button'
+              >
+                <svg
+                  className='h-4 w-4'
+                  xmlns='http://www.w3.org/2000/svg'
+                  viewBox='0 0 16 16'
+                  fill='currentColor'
+                >
+                  <path d='M5.28 4.22a.75.75 0 0 0-1.06 1.06L6.94 8l-2.72 2.72a.75.75 0 1 0 1.06 1.06L8 9.06l2.72 2.72a.75.75 0 1 0 1.06-1.06L9.06 8l2.72-2.72a.75.75 0 0 0-1.06-1.06L8 6.94 5.28 4.22Z' />
+                </svg>
+              </button>
+            )}
+          </label>
+        </div>
+      )}
 
       <div className='overflow-x-auto'>
         {' '}
