@@ -1,6 +1,37 @@
 'use client';
 
 import { useAppForm } from '@/shared/forms/formContext';
+import { z } from 'zod';
+
+// Let's pretend we have a person type somewhere and we want to create a contact form for them
+type Person = {
+  firstName: string;
+  lastName: string;
+  email: string;
+};
+
+/**
+ * Zod schema for form validation
+ */
+/**
+ * Zod schema for form validation, built from the Person type
+ */
+const contactFormSchema = z.object({
+  firstName: z
+    .string()
+    .min(1, 'First name is required')
+    .min(2, 'First name must be at least 2 characters')
+    .max(50, 'First name must be less than 50 characters')
+    .refine((value) => value !== 'error', 'Cannot use "error" as first name'),
+  lastName: z
+    .string()
+    .min(1, 'Last name is required')
+    .min(2, 'Last name must be at least 2 characters')
+    .max(50, 'Last name must be less than 50 characters'),
+  email: z
+    .email('Please enter a valid email address')
+    .min(1, 'Email is required'),
+});
 
 /**
  * Form sample page demonstrating the custom form components with TanStack Form
@@ -12,7 +43,11 @@ export default function FormPage() {
       lastName: 'Doe',
       email: '',
     },
+    validators: {
+      onChange: contactFormSchema,
+    },
     onSubmit: async ({ value }) => {
+      // only called if the form is valid
       // Simulate API call
       console.log('Form submitted with values:', value);
       await new Promise((resolve) => setTimeout(resolve, 2000));
@@ -30,8 +65,9 @@ export default function FormPage() {
           <h1 className='text-5xl font-bold mb-4'>Form Example</h1>
           <p className='text-xl max-w-2xl mx-auto text-base-content/70'>
             This page demonstrates our custom form components built with
-            TanStack Form. The form includes validation, loading states, and
-            modern styling with DaisyUI.
+            TanStack Form and Zod validation. The form includes real-time
+            validation, async validation, loading states, and modern styling
+            with DaisyUI.
           </p>
         </header>
 
@@ -42,9 +78,10 @@ export default function FormPage() {
               <div className='card-body'>
                 <h2 className='card-title text-2xl mb-6'>Contact Form</h2>
                 <p className='text-base-content/70 mb-6'>
-                  Fill out the form below to see the custom form components in
-                  action. Try submitting to see the loading state and
-                  validation.
+                  Fill out the form below to see the custom form components with
+                  Zod validation in action. Try submitting to see the loading
+                  state and validation errors. The form uses both form-level and
+                  field-level validation.
                 </p>
                 <form
                   onSubmit={(e) => {
@@ -54,7 +91,24 @@ export default function FormPage() {
                 >
                   <form.AppForm>
                     <div className='space-y-6'>
-                      <form.AppField name='firstName'>
+                      <form.AppField
+                        name='firstName'
+                        validators={{
+                          onChangeAsyncDebounceMs: 500,
+                          onChangeAsync: z.string().refine(
+                            async (value) => {
+                              // Simulate API call to check if name is available
+                              await new Promise((resolve) =>
+                                setTimeout(resolve, 1000)
+                              );
+                              return value.toLowerCase() !== 'admin';
+                            },
+                            {
+                              message: 'This name is not available',
+                            }
+                          ),
+                        }}
+                      >
                         {(f) => <f.TextField label='First Name' />}
                       </form.AppField>
 
@@ -106,9 +160,12 @@ export default function FormPage() {
                     />
                   </svg>
                 </div>
-                <h3 className='card-title justify-center mb-2'>Validation</h3>
+                <h3 className='card-title justify-center mb-2'>
+                  Zod Validation
+                </h3>
                 <p className='text-base-content/70'>
-                  Real-time validation with async support for complex checks
+                  Schema-based validation with Zod for type-safe, declarative
+                  validation rules
                 </p>
               </div>
             </div>
@@ -174,7 +231,7 @@ export default function FormPage() {
             <div className='grid md:grid-cols-2 gap-8'>
               <div className='card bg-base-100 shadow-md'>
                 <div className='card-body'>
-                  <h3 className='card-title mb-4'>Validation Testing</h3>
+                  <h3 className='card-title mb-4'>Zod Validation Testing</h3>
                   <ul className='space-y-2 text-sm'>
                     <li className='flex items-center'>
                       <span className='text-primary mr-2'>•</span>
@@ -182,7 +239,11 @@ export default function FormPage() {
                     </li>
                     <li className='flex items-center'>
                       <span className='text-primary mr-2'>•</span>
-                      Enter &quot;error&quot; in first name for async validation
+                      Enter &quot;error&quot; in first name (blocked by schema)
+                    </li>
+                    <li className='flex items-center'>
+                      <span className='text-primary mr-2'>•</span>
+                      Enter &quot;admin&quot; in first name for async validation
                     </li>
                     <li className='flex items-center'>
                       <span className='text-primary mr-2'>•</span>
@@ -190,7 +251,7 @@ export default function FormPage() {
                     </li>
                     <li className='flex items-center'>
                       <span className='text-primary mr-2'>•</span>
-                      Write a message shorter than 10 characters
+                      Try single character names (min length validation)
                     </li>
                   </ul>
                 </div>

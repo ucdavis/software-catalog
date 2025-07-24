@@ -7,7 +7,7 @@ interface TextFieldProps {
 
 export function TextField({ label, placeholder }: TextFieldProps) {
   const field = useFieldContext<string>();
-  const hasError = !field.state.meta.isValid;
+  const hasError = field.state.meta.isTouched && !field.state.meta.isValid;
 
   return (
     <div className='form-control w-full'>
@@ -26,7 +26,7 @@ export function TextField({ label, placeholder }: TextFieldProps) {
       {hasError && (
         <label className='label'>
           <span className='label-text-alt text-error' role='alert'>
-            {field.state.meta.errors.join(', ')}
+            {field.state.meta.errors.map((err) => err.message).join(', ')}
           </span>
         </label>
       )}
