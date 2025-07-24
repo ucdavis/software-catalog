@@ -1,11 +1,12 @@
 import { useFieldContext } from './formContext';
 
-interface TextFieldProps {
+interface SelectFieldProps {
   label: string;
+  options: Array<{ value: string; label: string }>;
   placeholder?: string;
 }
 
-export function TextField({ label, placeholder }: TextFieldProps) {
+export function SelectField({ label, options, placeholder }: SelectFieldProps) {
   const field = useFieldContext<string>();
   const hasError = field.state.meta.isTouched && !field.state.meta.isValid;
 
@@ -14,24 +15,28 @@ export function TextField({ label, placeholder }: TextFieldProps) {
       <label className='label'>
         <span className='label-text font-medium'>{label}</span>
       </label>
-      <input
-        type='text'
-        placeholder={placeholder ?? `Enter ${label.toLowerCase()}`}
-        className={`input input-bordered w-full ${
-          hasError ? 'input-error' : ''
+      <select
+        className={`select select-bordered w-full ${
+          hasError ? 'select-error' : ''
         }`}
-        value={field.state.value}
+        value={field.state.value || ''}
         onChange={(e) => field.handleChange(e.target.value)}
-      />
+      >
+        <option value='' disabled>
+          {placeholder ?? `Pick a ${label.toLowerCase()}`}
+        </option>
+        {options.map((option) => (
+          <option key={option.value} value={option.value}>
+            {option.label}
+          </option>
+        ))}
+      </select>
       {hasError && (
         <label className='label'>
           <span className='label-text-alt text-error' role='alert'>
             {field.state.meta.errors.map((err) => err.message).join(', ')}
           </span>
         </label>
-      )}
-      {field.state.meta.isValidating && (
-        <span className='loading loading-spinner loading-xs ml-2'></span>
       )}
     </div>
   );

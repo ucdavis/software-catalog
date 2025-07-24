@@ -8,7 +8,10 @@ type Person = {
   firstName: string;
   lastName: string;
   email: string;
+  role: 'Admin' | 'User' | 'Guest';
 };
+
+const availableRoles: Person['role'][] = ['Admin', 'User', 'Guest'];
 
 /**
  * Zod schema for form validation, built from the Person type
@@ -28,6 +31,7 @@ const contactFormSchema = z.object({
   email: z
     .email('Please enter a valid email address')
     .min(1, 'Email is required'),
+  role: z.enum(availableRoles, 'Please select a valid role'),
 }) satisfies z.ZodType<Person>; // satisfies is option here but fun for type safety
 
 /**
@@ -39,7 +43,8 @@ export default function FormPage() {
       firstName: 'John',
       lastName: 'Doe',
       email: '',
-    } satisfies Person,
+      role: '',
+    },
     validators: {
       onChange: contactFormSchema,
     },
@@ -77,8 +82,7 @@ export default function FormPage() {
                 <p className='text-base-content/70 mb-6'>
                   Fill out the form below to see the custom form components with
                   Zod validation in action. Try submitting to see the loading
-                  state and validation errors. The form uses both form-level and
-                  field-level validation.
+                  state and validation errors.
                 </p>
                 <form
                   onSubmit={(e) => {
@@ -120,6 +124,21 @@ export default function FormPage() {
                           <f.TextField
                             label='Email Address'
                             placeholder='Enter your email address'
+                          />
+                        )}
+                      </form.AppField>
+
+                      {/* Role Selection */}
+                      <form.AppField name='role'>
+                        {(f) => (
+                          <f.SelectField
+                            label='Role'
+                            options={availableRoles.map((role) => ({
+                              value: role,
+                              label:
+                                role.charAt(0).toUpperCase() + role.slice(1), // uppercase first letter
+                            }))}
+                            placeholder='Select your role'
                           />
                         )}
                       </form.AppField>
