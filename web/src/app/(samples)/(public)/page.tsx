@@ -76,6 +76,20 @@ export default async function Home() {
             </div>
             <div className='card bg-base-100 shadow-md'>
               <div className='card-body'>
+                <h3 className='card-title'>Data Table Example</h3>
+                <p className='text-base-content/70'>
+                  This page demonstrates the DataTable component with sample
+                  data and different data types.
+                </p>
+                <div className='card-actions justify-end'>
+                  <Link href='/table' className='btn btn-primary'>
+                    Go to Table Page
+                  </Link>
+                </div>
+              </div>
+            </div>
+            <div className='card bg-base-100 shadow-md'>
+              <div className='card-body'>
                 <h3 className='card-title'>Login Example</h3>
                 <p className='text-base-content/70'>
                   This page requires login to access.
