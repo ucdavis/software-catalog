@@ -1,4 +1,5 @@
 import { useFieldContext } from './formContext';
+import { FieldWrapper } from './fieldWrapper';
 
 interface SelectFieldProps {
   label: string;
@@ -11,10 +12,7 @@ export function SelectField({ label, options, placeholder }: SelectFieldProps) {
   const hasError = field.state.meta.isTouched && !field.state.meta.isValid;
 
   return (
-    <div className='form-control w-full'>
-      <label className='label'>
-        <span className='label-text font-medium'>{label}</span>
-      </label>
+    <FieldWrapper label={label}>
       <select
         className={`select select-bordered w-full ${
           hasError ? 'select-error' : ''
@@ -31,13 +29,6 @@ export function SelectField({ label, options, placeholder }: SelectFieldProps) {
           </option>
         ))}
       </select>
-      {hasError && (
-        <label className='label'>
-          <span className='label-text-alt text-error' role='alert'>
-            {field.state.meta.errors.map((err) => err.message).join(', ')}
-          </span>
-        </label>
-      )}
-    </div>
+    </FieldWrapper>
   );
 }

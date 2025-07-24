@@ -1,4 +1,5 @@
 import { useFieldContext } from './formContext';
+import { FieldWrapper } from './fieldWrapper';
 
 interface TextFieldProps {
   label: string;
@@ -10,10 +11,7 @@ export function TextField({ label, placeholder }: TextFieldProps) {
   const hasError = field.state.meta.isTouched && !field.state.meta.isValid;
 
   return (
-    <div className='form-control w-full'>
-      <label className='label'>
-        <span className='label-text font-medium'>{label}</span>
-      </label>
+    <FieldWrapper label={label}>
       <input
         type='text'
         placeholder={placeholder ?? `Enter ${label.toLowerCase()}`}
@@ -23,16 +21,6 @@ export function TextField({ label, placeholder }: TextFieldProps) {
         value={field.state.value}
         onChange={(e) => field.handleChange(e.target.value)}
       />
-      {hasError && (
-        <label className='label'>
-          <span className='label-text-alt text-error' role='alert'>
-            {field.state.meta.errors.map((err) => err.message).join(', ')}
-          </span>
-        </label>
-      )}
-      {field.state.meta.isValidating && (
-        <span className='loading loading-spinner loading-xs ml-2'></span>
-      )}
-    </div>
+    </FieldWrapper>
   );
 }
