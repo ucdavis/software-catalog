@@ -135,7 +135,11 @@ export default function TablePage() {
                 data.
               </p>
 
-              <DataTable data={sampleData} columns={columns} />
+              <DataTable
+                data={sampleData}
+                columns={columns}
+                initialState={{ pagination: { pageSize: 5 } }}
+              />
             </div>
           </div>
         </section>

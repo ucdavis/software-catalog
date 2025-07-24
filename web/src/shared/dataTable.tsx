@@ -5,18 +5,21 @@ import {
   getFilteredRowModel,
   getPaginationRowModel,
   getSortedRowModel,
+  InitialTableState,
   useReactTable,
 } from '@tanstack/react-table';
 
 interface DataTableProps<TData extends object> {
   data: TData[];
   columns: ColumnDef<TData>[];
+  initialState?: InitialTableState; // Optional initial state for the table, use for stuff like setting page size or sorting
   // ...any other props, initial state?, export? pages? filter? sorting?
 }
 
 export const DataTable = <TData extends object>({
   data,
   columns,
+  initialState,
 }: DataTableProps<TData>) => {
   const table = useReactTable({
     data,
@@ -25,6 +28,9 @@ export const DataTable = <TData extends object>({
     getSortedRowModel: getSortedRowModel(), // enable sorting feature
     getFilteredRowModel: getFilteredRowModel(), // enable filtering feature
     getPaginationRowModel: getPaginationRowModel(), // enable pagination calculations
+    initialState: {
+      ...initialState,
+    },
   });
 
   return (
