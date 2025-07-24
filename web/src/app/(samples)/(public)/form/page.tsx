@@ -11,9 +11,6 @@ type Person = {
 };
 
 /**
- * Zod schema for form validation
- */
-/**
  * Zod schema for form validation, built from the Person type
  */
 const contactFormSchema = z.object({
@@ -31,7 +28,7 @@ const contactFormSchema = z.object({
   email: z
     .email('Please enter a valid email address')
     .min(1, 'Email is required'),
-});
+}) satisfies z.ZodType<Person>; // satisfies is option here but fun for type safety
 
 /**
  * Form sample page demonstrating the custom form components with TanStack Form
@@ -42,7 +39,7 @@ export default function FormPage() {
       firstName: 'John',
       lastName: 'Doe',
       email: '',
-    },
+    } satisfies Person,
     validators: {
       onChange: contactFormSchema,
     },
