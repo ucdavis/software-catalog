@@ -5,7 +5,7 @@
 - Use Next.js (React, TypeScript) conventions for all code.
 - Place new pages in the correct subfolder of `src/app/` (`(public)`, `(protected)`, or `api`).
 - Use `.tsx` for React components and prefer functional components.
-- Use Tailwind CSS for all styling.
+- Use Tailwind CSS w/ DaisyUI for all styling.
 - For database access, use Prisma ORM with the schema in `prisma/schema.prisma`.
 - For authentication, use AuthJS (Next-Auth) and follow the config in `src/server/auth/config.ts`.
 - For APIs, use tRPC and add new procedures to `src/server/api/router.ts` and related files.
