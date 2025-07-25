@@ -35,4 +35,4 @@
 
 ---
 
-For more details, see the main [README.md](../web/README.md).
+For more details, see the main [README.md](../README.md).

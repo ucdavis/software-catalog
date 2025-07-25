@@ -1,0 +1,139 @@
+# --------------------------- ABOUT --------------------------------------
+# this pipeline deploys code to an Azure static webapp pointing to a pgsql db
+# `main` depoloys to the main app, while each PR deploys to an ephemeral "preview" url
+# the db for each preview uses a PR-specific schema so it is independent
+# NOTE: this requires our db to be open to azure services, so both pipelines & web can talk to the db
+# NOTE: we aren't seeding the db but eventually we might want to -- that would go right after `npx prisma migrate deploy`
+trigger:
+  branches:
+    include:
+      - main          # prod deploys
+
+pr:                   # preview deploys
+  branches:
+    include:
+      - "*"           # every PR against any branch
+
+#---------------------------- SHARED SECRETS ------------------------------
+variables:
+  PGHOST:      'app-template-pg.postgres.database.azure.com'
+  PGPORT:      '5432'
+  PGUSER:      'caes'
+  PGPASSWORD:  '$(PGPASSWORD)'            # pull from Library/secret
+  SWA_TOKEN:   '$(SWA_TOKEN)'             # Static Web App deployment token
+  APP_LOCATION: 'web' # app is in the web folder
+  OUTPUT_LOCATION: '.next'
+
+#--------------------------- STAGE: PREVIEW --------------------------------
+- stage: preview
+  displayName: 'Preview deploy for PR'
+  condition: and(
+              eq(variables['Build.Reason'], 'PullRequest'),
+              ne(variables['System.PullRequest.PullRequestAction'], 'Closed')
+            )
+  jobs:
+  - job: build_preview
+    displayName: 'Build & deploy preview'
+    pool: { vmImage: 'ubuntu-latest' }
+
+    steps:
+    - checkout: self
+
+    - bash: |
+        sudo apt-get -qq update
+        sudo apt-get -yqq install postgresql-client
+      displayName: 'Install psql client'
+
+    - bash: |
+        PR=$(System.PullRequest.PullRequestId)
+        export PGSCHEMA=pr_${PR}
+        export DATABASE_URL="postgres://$(PGUSER):$(PGPASSWORD)@$(PGHOST):$(PGPORT)/main?schema=${PGSCHEMA}"
+
+        echo "Creating schema ${PGSCHEMA} (if absent)…"
+        psql "postgres://$(PGUSER):$(PGPASSWORD)@$(PGHOST):$(PGPORT)/main" \
+             -c "CREATE SCHEMA IF NOT EXISTS ${PGSCHEMA}"
+
+        echo "Running Prisma migrations…"
+        npx prisma migrate deploy
+
+        # hand values to later tasks
+        echo "##vso[task.setvariable variable=DATABASE_URL;issecret=true]${DATABASE_URL}"
+        echo "##vso[task.setvariable variable=PGSCHEMA]${PGSCHEMA}"
+      displayName: 'Create schema & migrate'
+      env:
+        PGPASSWORD: $(PGPASSWORD)
+
+    - task: AzureStaticWebApp@0
+      displayName: 'Deploy Static Web App preview'
+      inputs:
+        azure_static_web_apps_api_token: $(SWA_TOKEN)
+        app_location: $(APP_LOCATION)
+        output_location: $(OUTPUT_LOCATION)
+      env:
+        # becomes runtime env-vars inside the Functions host
+        DATABASE_URL: $(DATABASE_URL)
+        PGSCHEMA: $(PGSCHEMA)
+
+#---------------------------- CLEAN-UP ------------------------------------
+- stage: cleanup
+  displayName: 'Drop schema on PR close'
+  condition: and(
+              eq(variables['Build.Reason'], 'PullRequest'),
+              eq(variables['System.PullRequest.PullRequestAction'], 'Closed')
+            )
+  jobs:
+  - job: drop_schema
+    displayName: 'Drop pr_<ID> schema'
+    pool: { vmImage: 'ubuntu-latest' }
+
+    steps:
+    - bash: |
+        sudo apt-get -qq update
+        sudo apt-get -yqq install postgresql-client
+      displayName: 'Install psql client'
+
+    - bash: |
+        PR=$(System.PullRequest.PullRequestId)
+        PGSCHEMA=pr_${PR}
+        echo "Dropping schema ${PGSCHEMA}…"
+        psql "postgres://$(PGUSER):$(PGPASSWORD)@$(PGHOST):$(PGPORT)/main" \
+             -c "DROP SCHEMA IF EXISTS ${PGSCHEMA} CASCADE"
+      displayName: 'DROP SCHEMA'
+      env:
+        PGPASSWORD: $(PGPASSWORD)
+
+#--------------------------- STAGE: PRODUCTION ----------------------------
+- stage: production
+  displayName: 'Deploy main to production'
+  condition: and(succeeded(), eq(variables['Build.SourceBranch'], 'refs/heads/main'))
+  jobs:
+  - job: deploy_prod
+    displayName: 'Build & deploy production'
+    pool: { vmImage: 'ubuntu-latest' }
+
+    steps:
+    - checkout: self
+
+    - bash: |
+        sudo apt-get -qq update
+        sudo apt-get -yqq install postgresql-client
+      displayName: 'Install psql client'
+
+    - bash: |
+        export DATABASE_URL="postgres://$(PGUSER):$(PGPASSWORD)@$(PGHOST):$(PGPORT)/main"
+        echo "Running migrations on production DB…"
+        npx prisma migrate deploy
+        echo "##vso[task.setvariable variable=DATABASE_URL;issecret=true]${DATABASE_URL}"
+      displayName: 'Migrate main DB'
+      env:
+        PGPASSWORD: $(PGPASSWORD)
+
+    - task: AzureStaticWebApp@0
+      displayName: 'Deploy Static Web App (production)'
+      inputs:
+        azure_static_web_apps_api_token: $(SWA_TOKEN)
+        app_location: $(APP_LOCATION)
+        output_location: $(OUTPUT_LOCATION)
+        production_branch: 'main'
+      env:
+        DATABASE_URL: $(DATABASE_URL)
