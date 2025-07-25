@@ -12,6 +12,8 @@ export default async function LoginPage() {
     redirect('/');
   }
 
+  const showCas = false; // let's use entra
+
   return (
     <div className='min-h-screen flex items-center justify-center py-12 px-4 sm:px-6 lg:px-8'>
       {/* Homepage Link */}
@@ -39,9 +41,6 @@ export default async function LoginPage() {
         <div>
           <BeakerIcon className='size-6 text-ucd-cabernet' />
           <h2 className='mt-6 text-center'>Sign in to your account</h2>
-          <p className='mt-2 text-center'>
-            Choose your preferred sign-in method
-          </p>
         </div>
 
         <div className='mt-8 space-y-4'>
@@ -63,23 +62,25 @@ export default async function LoginPage() {
             </button>
           </form>
 
-          <form
-            action={async () => {
-              'use server';
-              await signIn('ucdcas', { redirectTo: '/' });
-            }}
-          >
-            <button type='submit' className='btn btn-secondary w-full'>
-              <svg
-                className='w-5 h-5 mr-2'
-                viewBox='0 0 24 24'
-                fill='currentColor'
-              >
-                <path d='M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-2 15l-5-5 1.41-1.41L10 14.17l7.59-7.59L19 8l-9 9z' />
-              </svg>
-              Sign in with UC Davis CAS
-            </button>
-          </form>
+          {showCas && (
+            <form
+              action={async () => {
+                'use server';
+                await signIn('ucdcas', { redirectTo: '/' });
+              }}
+            >
+              <button type='submit' className='btn btn-secondary w-full'>
+                <svg
+                  className='w-5 h-5 mr-2'
+                  viewBox='0 0 24 24'
+                  fill='currentColor'
+                >
+                  <path d='M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-2 15l-5-5 1.41-1.41L10 14.17l7.59-7.59L19 8l-9 9z' />
+                </svg>
+                Sign in with UC Davis CAS
+              </button>
+            </form>
+          )}
         </div>
 
         <div className='text-center text-xs text-gray-500 dark:text-gray-400'>

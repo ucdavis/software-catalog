@@ -27,6 +27,55 @@ declare module 'next-auth' {
 }
 
 /**
+ * Build the providers array based on available environment variables
+ */
+const buildProviders = () => {
+  const providers = [];
+
+  // Add Microsoft Entra ID provider if credentials are available
+  if (
+    env.AUTH_UCD_ENTRA_CLIENT_ID &&
+    env.AUTH_UCD_ENTRA_CLIENT_SECRET &&
+    env.AUTH_UCD_ENTRA_ISSUER
+  ) {
+    providers.push(
+      MicrosoftEntraID({
+        id: 'microsoft-entra-id',
+        name: 'UC Davis - Microsoft Entra ID',
+        clientId: env.AUTH_UCD_ENTRA_CLIENT_ID,
+        clientSecret: env.AUTH_UCD_ENTRA_CLIENT_SECRET,
+        issuer: env.AUTH_UCD_ENTRA_ISSUER,
+      })
+    );
+  }
+
+  // Add UC Davis CAS provider if credentials are available
+  if (
+    env.AUTH_UCD_CAS_URL &&
+    env.AUTH_UCD_CAS_CLIENT_ID &&
+    env.AUTH_UCD_CAS_CLIENT_SECRET
+  ) {
+    providers.push({
+      id: 'ucdcas',
+      name: 'UC Davis CAS',
+      type: 'oidc' as const,
+      issuer: env.AUTH_UCD_CAS_URL,
+      clientId: env.AUTH_UCD_CAS_CLIENT_ID,
+      clientSecret: env.AUTH_UCD_CAS_CLIENT_SECRET,
+    });
+  }
+
+  // This should never happen due to env validation, but adding as a safety check
+  if (providers.length === 0) {
+    throw new Error(
+      'No authentication providers configured. At least one of Microsoft Entra ID or UC Davis CAS must be properly configured.'
+    );
+  }
+
+  return providers;
+};
+
+/**
  * Options for NextAuth.js used to configure adapters, providers, callbacks, etc.
  *
  * @see https://next-auth.js.org/configuration/options
@@ -37,23 +86,7 @@ export const authConfig = {
   pages: {
     signIn: '/login',
   },
-  providers: [
-    MicrosoftEntraID({
-      id: 'microsoft-entra-id',
-      name: 'UC Davis - Microsoft Entra ID',
-      clientId: env.AUTH_UCD_ENTRA_CLIENT_ID,
-      clientSecret: env.AUTH_UCD_ENTRA_CLIENT_SECRET,
-      issuer: env.AUTH_UCD_ENTRA_ISSUER,
-    }),
-    {
-      id: 'ucdcas',
-      name: 'UC Davis CAS',
-      type: 'oidc',
-      issuer: env.AUTH_UCD_CAS_URL,
-      clientId: env.AUTH_UCD_CAS_CLIENT_ID,
-      clientSecret: env.AUTH_UCD_CAS_CLIENT_SECRET,
-    },
-  ],
+  providers: buildProviders(),
   adapter: PrismaAdapter(db),
   callbacks: {
     session: ({ session, user }) => ({
