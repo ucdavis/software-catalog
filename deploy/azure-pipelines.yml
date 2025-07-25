@@ -136,7 +136,11 @@ stages:
   #--------------------------- STAGE: PRODUCTION ----------------------------
   - stage: production
     displayName: 'Deploy main to production'
-    condition: and(succeeded(), eq(variables['Build.SourceBranch'], 'refs/heads/main'))
+    dependsOn: [] # ignore earlier stages, prod is independent
+    condition: and(
+      eq( variables['Build.SourceBranch'], 'refs/heads/main' ),
+      ne( variables['Build.Reason'], 'PullRequest' )
+      )
     jobs:
       - job: deploy_prod
         displayName: 'Build & deploy production'
