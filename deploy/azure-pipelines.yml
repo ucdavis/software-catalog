@@ -16,15 +16,13 @@ pr: # preview deploys
 
 #---------------------------- SHARED SECRETS ------------------------------
 variables:
-  PGHOST: 'app-template-pg.postgres.database.azure.com'
-  PGPORT: '5432'
-  PGUSER: 'caes'
-  PGPASSWORD: '$(PGPASSWORD)' # pull from Library/secret
-  RG_NAME: 'app-template' # resource group that holds the SWA
-  SWA_NAME: 'pp-template-web' # static web app name
-  SWA_TOKEN: '$(SWA_TOKEN)' # Static Web App deployment token
-  APP_LOCATION: 'web' # app is in the web folder
-  OUTPUT_LOCATION: '.next'
+  - group: app-template-ci
+
+  # some more constants i didn't feel like putting in secrets
+  - name: APP_LOCATION
+    value: 'web'
+  - name: OUTPUT_LOCATION
+    value: '.next'
 
 #--------------------------- STAGE: PREVIEW --------------------------------
 stages:
