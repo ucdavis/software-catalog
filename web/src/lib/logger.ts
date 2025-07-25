@@ -4,18 +4,20 @@ import pinoElastic from 'pino-elasticsearch';
 import { ecsFormat } from '@elastic/ecs-pino-format';
 
 /**
- * Generates an index name string for logs based on the provided ISO timestamp.
+ * Generates an index name string for logs based on the app name and environment.
  *
- * The index name is constructed in the format: `logs-<APP_NAME>-<YYYY>-<MM>`,
- * where `<APP_NAME>` is taken from the environment variable `APP_NAME`,
- * `<YYYY>` is the 4-digit year, and `<MM>` is the 2-digit month extracted from the given ISO time.
- *
- * @param isoTime - An ISO 8601 formatted date-time string.
- * @returns The generated index name string.
+ * Elastic data streams are named with the format https://www.elastic.co/docs/reference/fleet/data-streams:
+ * `<type>-<dataset>-<namespace>`
+ * Where:
+ * - `<type>` is always `logs`
+ * - `<dataset>` is the app name
+ * - `<namespace>` is the year and month of the log entry
  */
-const getIndexName = (isoTime: string) => {
-  const d = new Date(isoTime);
-  return `logs-${env.APP_NAME}-${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`;
+
+const getIndexName = () => {
+  const appNameNoDashes = env.APP_NAME?.replace(/-/g, '_') || 'unknown_app';
+  const log_env = env.LOG_ENV;
+  return `logs-${appNameNoDashes}-${log_env}`;
 };
 
 const productionLogStreams: StreamEntry[] = [
@@ -23,15 +25,16 @@ const productionLogStreams: StreamEntry[] = [
 ];
 
 const isProd = process.env.NODE_ENV === 'production';
-const hasElastic = !!process.env.LOG_ELASTIC_URL && isProd;
+const hasElastic = !!process.env.LOG_ELASTIC_URL;
 
 if (hasElastic) {
   /* Add ES stream only when the URL is present and we are in prod */
   productionLogStreams.push({
     level: env.LOG_LEVEL, // can change to make elastic logs a custom level
     stream: pinoElastic({
-      index: getIndexName,
+      index: getIndexName(),
       node: process.env.LOG_ELASTIC_URL,
+      opType: 'create', // data stream, so always create new entries
       esVersion: 8, // adjust or supposedly you can remove to auto-detect
       flushBytes: 1000,
     }),
@@ -40,7 +43,15 @@ if (hasElastic) {
 
 export const logger: Logger = isProd
   ? pino(
-      { level: env.LOG_LEVEL, ...ecsFormat() }, // ECS JSON everywhere
+      {
+        level: env.LOG_LEVEL,
+        ...ecsFormat(),
+        base: {
+          app: env.APP_NAME,
+          env: env.LOG_ENV,
+          // Add any other base properties you want to log with every log entry
+        },
+      }, // ECS JSON everywhere
       pino.multistream(productionLogStreams, { dedupe: true }) // dedupe avoids dup lines
     )
   : pino({
@@ -50,3 +61,7 @@ export const logger: Logger = isProd
         options: { colorize: true },
       },
     });
+
+logger.info(
+  `Logger initialized with level: ${env.LOG_LEVEL}, environment: ${env.LOG_ENV}, app: ${env.APP_NAME}. Using elastic? ${isProd && hasElastic ? 'yes' : 'no'}.`
+);

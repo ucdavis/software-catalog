@@ -24,6 +24,9 @@ const envSchema = z
     AUTH_UCD_ENTRA_ISSUER: z.string().min(1).optional(),
 
     // Logging
+    LOG_ENV: z
+      .enum(['local', 'development', 'test', 'staging', 'production'])
+      .default('development'),
     LOG_LEVEL: z.enum(['debug', 'info', 'warn', 'error']).default('info'),
     LOG_ELASTIC_URL: z.url().optional().default('http://localhost:9200'),
 
