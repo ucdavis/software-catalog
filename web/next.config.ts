@@ -13,6 +13,11 @@ const nextConfig: NextConfig = {
     };
     return cfg;
   },
+  turbopack: {
+    resolveAlias: {
+      'elastic-apm-node': '', // stub-out
+    },
+  },
 };
 
 export default nextConfig;
