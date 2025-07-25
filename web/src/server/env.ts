@@ -1,5 +1,10 @@
 import { z } from 'zod';
 
+/**
+ * Type-safe environment variables.
+ * Validates and caches the environment variables on first access.
+ */
+
 const envSchema = z
   .object({
     // General
@@ -49,15 +54,20 @@ const envSchema = z
       );
 
       // At least one auth method must be configured
-      return hasCas || hasEntra; // OR: true if at least one is true
+      return hasCas || hasEntra;
     },
     {
       message:
-        'At least one complete authentication method must be provided: either UC Davis CAS credentials (URL, CLIENT_ID, CLIENT_SECRET) or Microsoft Entra ID credentials (CLIENT_ID, CLIENT_SECRET, ISSUER), or both.',
+        'At least one complete authentication method must be provided: either UC Davis CAS credentials or Microsoft Entra ID credentials, or both.',
     }
   );
 
-export const env = envSchema.parse(process.env);
+type Env = z.infer<typeof envSchema>;
 
-// Type-safe environment variables
-export type Env = z.infer<typeof envSchema>;
+let cached: Env | null = null;
+
+/** Read environment variables (validated once, then cached). */
+export function env(): Env {
+  if (!cached) cached = envSchema.parse(process.env);
+  return cached;
+}

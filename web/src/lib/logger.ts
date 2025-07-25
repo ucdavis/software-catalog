@@ -15,7 +15,7 @@ import { ecsFormat } from '@elastic/ecs-pino-format';
  */
 const getIndexName = (isoTime: string) => {
   const d = new Date(isoTime);
-  return `logs-${env.APP_NAME}-${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`;
+  return `logs-${env().APP_NAME}-${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`;
 };
 
 const productionLogStreams: StreamEntry[] = [
@@ -28,7 +28,7 @@ const hasElastic = !!process.env.LOG_ELASTIC_URL && isProd;
 if (hasElastic) {
   /* Add ES stream only when the URL is present and we are in prod */
   productionLogStreams.push({
-    level: env.LOG_LEVEL, // can change to make elastic logs a custom level
+    level: env().LOG_LEVEL, // can change to make elastic logs a custom level
     stream: pinoElastic({
       index: getIndexName,
       node: process.env.LOG_ELASTIC_URL,
@@ -40,7 +40,7 @@ if (hasElastic) {
 
 export const logger: Logger = isProd
   ? pino(
-      { level: env.LOG_LEVEL, ...ecsFormat() }, // ECS JSON everywhere
+      { level: env().LOG_LEVEL, ...ecsFormat() }, // ECS JSON everywhere
       pino.multistream(productionLogStreams, { dedupe: true }) // dedupe avoids dup lines
     )
   : pino({
