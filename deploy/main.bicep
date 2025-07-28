@@ -12,11 +12,6 @@ param pgPassword string
 @description('SKU name for the PostgreSQL server')
 param pgSkuName string = 'Standard_B1ms' // Standard_B1ms | Standard_B2ms (or others)
 
-@description('Name of the Static Web App (DNS prefix)')
-param swaName string
-@description('Free | Standard | Standard_Zonal')
-param swaSku string = 'Standard'
-
 resource pg 'Microsoft.DBforPostgreSQL/flexibleServers@2025-01-01-preview' = {
   name: pgName
   location: location
@@ -48,28 +43,40 @@ resource pgDb 'Microsoft.DBforPostgreSQL/flexibleServers/databases@2025-01-01-pr
   }
 }
 
-// create the website SWA
-resource swa 'Microsoft.Web/staticSites@2024-11-01' = {
-  name: swaName
+/* ─── App Service plan (Linux, B1) ───────────────────────────── */
+@description('App Service plan name')
+param planName string = 'app-template-plan'
+
+resource plan 'Microsoft.Web/serverfarms@2024-11-01' = {
+  name: planName
   location: location
-  sku: {
-    name: swaSku
-    tier: swaSku
-  }
-  properties: {
-    allowConfigFileUpdates: true // lets the pipeline push SWA config 
-  }
+  sku: { name: 'B1', tier: 'Basic', size: 'B1', capacity: 1 }
+  kind: 'linux'
+  properties: { reserved: true } // true = Linux
 }
 
-// link the Static Web App to the PostgreSQL server by allowing access to azure resources since SWA doesn't have a VNET
-resource allowAzure 'Microsoft.DBforPostgreSQL/flexibleServers/firewallRules@2025-01-01-preview' = {
-  parent: pg
-  name: 'AllowAllAzure'
+/* ─── Web App (Node 20) ──────────────────────────────────────── */
+@description('Web App name')
+param webName string = 'app-template-web'
+
+resource app 'Microsoft.Web/sites@2024-11-01' = {
+  name: webName
+  location: location
+  kind: 'app,linux'
   properties: {
-    startIpAddress: '0.0.0.0'
-    endIpAddress: '0.0.0.0'
+    serverFarmId: plan.id
+    siteConfig: {
+      linuxFxVersion: 'NODE|20-lts' // built-in Node 20 runtime
+      appSettings: [
+        // placeholders – pipeline or portal will overwrite
+        { name: 'DATABASE_URL', value: 'placeholder' }
+        { name: 'PGSCHEMA', value: 'public' }
+        { name: 'WEBSITE_RUN_FROM_PACKAGE', value: '0' } // remote build
+      ]
+    }
+    httpsOnly: true
   }
 }
 
 output pgFqdn string = pg.properties.fullyQualifiedDomainName
-output swaRegion string = swa.location
+output webHost string = app.properties.defaultHostName

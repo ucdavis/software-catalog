@@ -8,4 +8,4 @@
 az group create -n app-template -l westus2
 
 # deploy the Bicep template with parameters
-az deployment group create --resource-group app-template --template-file main.bicep --parameters pgName=app-template-pg pgSkuName=Standard_B1ms swaName=app-template-web swaSku=Free
+az deployment group create --resource-group app-template --template-file main.bicep --parameters pgName=app-template-pg pgSkuName=Standard_B1ms

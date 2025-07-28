@@ -1,5 +1,5 @@
 # --------------------------- ABOUT --------------------------------------
-# this pipeline deploys code to an Azure static webapp pointing to a pgsql db
+# this pipeline deploys code to an Azure webapp pointing to a pgsql db
 # `main` depoloys to the main app, while each PR deploys to an ephemeral "preview" url
 # the db for each preview uses a PR-specific schema so it is independent
 # NOTE: this requires our db to be open to azure services, so both pipelines & web can talk to the db
@@ -16,161 +16,149 @@ pr: # preview deploys
 
 #---------------------------- SHARED SECRETS ------------------------------
 variables:
-  - group: app-template-ci
+  - group: app-template-ci # include PG info and GH token
 
   # some more constants i didn't feel like putting in secrets
-  - name: APP_LOCATION
-    value: 'web'
-  - name: OUTPUT_LOCATION
-    value: '.next'
+  - name: RG
+  - value: 'app-template'
+  - name: APP_NAME
+  - value: 'app-template-web'
 
-#--------------------------- STAGE: PREVIEW --------------------------------
+# ───────────── COMMON FUNCTIONS (Bash) ─────────────
+# every Bash step will source these helpers
+steps:
+  - bash: |
+      cat <<'SCRIPT' > $HOME/helpers.sh
+      # create a slot if it doesn't exist
+      ensure_slot() {
+        az webapp deployment slot show -g $RG -n $APP_NAME -s "$1" >/dev/null 2>&1 ||
+        az webapp deployment slot create -g $RG -n $APP_NAME --slot "$1"
+      }
+      # zip current repo into app.zip
+      make_zip() {
+        zip -r app.zip * .[!.]*
+      }
+      # set app settings (handles root or slot)
+      set_settings() {
+        local slot_flag=""
+        [ -n "$1" ] && slot_flag="--slot $1"
+        shift
+        az webapp config appsettings set -g $RG -n $APP_NAME $slot_flag --settings "$@"
+      }
+      SCRIPT
+    displayName: 'Write helper script'
+
+#───────────────── STAGE: PREVIEW ───────────────────
 stages:
   - stage: preview
-    displayName: 'Preview deploy for PR'
-    condition: and(
-      eq(variables['Build.Reason'], 'PullRequest'),
-      ne(variables['System.PullRequest.PullRequestAction'], 'Closed')
-      )
+    displayName: 'PR preview slot'
+    condition: and(eq(variables['Build.Reason'], 'PullRequest'),
+      ne(variables['System.PullRequest.PullRequestAction'], 'Closed'))
     jobs:
       - job: build_preview
-        displayName: 'Build & deploy preview'
-        pool: { vmImage: 'ubuntu-latest' }
-
+        pool: { vmImage: ubuntu-latest }
         steps:
           - checkout: self
-
           - bash: |
-              sudo apt-get -qq update
-              sudo apt-get -yqq install postgresql-client
-            displayName: 'Install psql client'
+              source $HOME/helpers.sh
+              sudo apt-get -qq update && sudo apt-get -yqq install postgresql-client zip
 
-          - bash: |
               PR=$(System.PullRequest.PullRequestId)
-              export PGSCHEMA=pr_${PR}
+              SLOT="pr-${PR}"
+              export PGSCHEMA="pr_${PR}"
               export DATABASE_URL="postgres://$(PGUSER):$(PGPASSWORD)@$(PGHOST):$(PGPORT)/main?schema=${PGSCHEMA}"
 
-              echo "Creating schema ${PGSCHEMA} (if absent)…"
+              #── DB schema per PR ──────────────────────────
               psql "postgres://$(PGUSER):$(PGPASSWORD)@$(PGHOST):$(PGPORT)/main" \
                    -c "CREATE SCHEMA IF NOT EXISTS ${PGSCHEMA}"
 
-              echo "Running Prisma migrations in ./web …"
+              #── Build & package artefact ──────────────────
               pushd web
-              npx prisma migrate deploy
+              npm ci
+              npx prisma generate --schema ./prisma/schema.prisma
+              npm run build
               popd
+              make_zip
 
-              # hand values to later tasks
-              echo "##vso[task.setvariable variable=DATABASE_URL;issecret=true]${DATABASE_URL}"
-              echo "##vso[task.setvariable variable=PGSCHEMA]${PGSCHEMA}"
-            displayName: 'Create schema & migrate'
-            env:
-              PGPASSWORD: $(PGPASSWORD)
+              #── Create / update slot & settings ───────────
+              ensure_slot "$SLOT"
+              set_settings "$SLOT" \
+                WEBSITE_RUN_FROM_PACKAGE=1 \
+                DATABASE_URL="$DATABASE_URL" \
+                PGSCHEMA="$PGSCHEMA"
 
-          - task: AzureStaticWebApp@0
-            displayName: 'Deploy Static Web App preview'
-            inputs:
-              azure_static_web_apps_api_token: $(SWA_TOKEN)
-              app_location: $(APP_LOCATION)
-              output_location: $(OUTPUT_LOCATION)
-            env:
-              # becomes runtime env-vars inside the Functions host
-              DATABASE_URL: $(DATABASE_URL)
-              PGSCHEMA: $(PGSCHEMA)
+              #── Deploy zip to slot ────────────────────────
+              az webapp deploy -g $RG -n $APP_NAME --slot $SLOT \
+                               --type zip --src-path app.zip
 
-          - task: Bash@3
-            displayName: 'Comment preview URL on GitHub PR'
-            condition: succeeded()
-            env:
-              GH_TOKEN: $(GH_TOKEN) # ← create a PAT with “repo” scope
-            inputs:
-              targetType: inline
-              script: |
-                set -e
-                PR=$(System.PullRequest.PullRequestId)     # PR number on GitHub
-                # Get hostname of the new SWA environment
-                HOSTNAME=$(az staticwebapp environment show \
-                            --name $(SWA_NAME) \
-                            --resource-group $(RG_NAME) \
-                            --environment-name pr-${PR} \
-                            --query hostname -o tsv)
-                URL="https://${HOSTNAME}"
-                echo "Preview URL is ${URL}"
+              echo "##vso[task.setvariable variable=PREVIEW_URL]https://$APP_NAME-$SLOT.azurewebsites.net"
+            env: { PGPASSWORD: $(PGPASSWORD) }
+            displayName: 'Build, package, deploy to PR slot'
 
-                # Owner/repo come from pipeline variables
-                OWNER=$(Build.Repository.Name | cut -d'/' -f1)
-                REPO=$(Build.Repository.Name | cut -d'/' -f2)
-
-                curl -s -X POST \
-                  -H "Authorization: token ${GH_TOKEN}" \
-                  -H "Accept: application/vnd.github+json" \
-                  "https://api.github.com/repos/${OWNER}/${REPO}/issues/${PR}/comments" \
-                  -d "{\"body\":\"▶ **Preview**: ${URL}\"}"
-  #---------------------------- CLEAN-UP ------------------------------------
-  - stage: cleanup
-    displayName: 'Drop schema on PR close'
-    condition: and(
-      eq(variables['Build.Reason'], 'PullRequest'),
-      eq(variables['System.PullRequest.PullRequestAction'], 'Closed')
-      )
-    jobs:
-      - job: drop_schema
-        displayName: 'Drop pr_<ID> schema'
-        pool: { vmImage: 'ubuntu-latest' }
-
-        steps:
+          #── Comment the URL on the GitHub PR ──────────────
           - bash: |
-              sudo apt-get -qq update
-              sudo apt-get -yqq install postgresql-client
-            displayName: 'Install psql client'
-
-          - bash: |
+              set -e
               PR=$(System.PullRequest.PullRequestId)
-              PGSCHEMA=pr_${PR}
-              echo "Dropping schema ${PGSCHEMA}…"
-              psql "postgres://$(PGUSER):$(PGPASSWORD)@$(PGHOST):$(PGPORT)/main" \
-                   -c "DROP SCHEMA IF EXISTS ${PGSCHEMA} CASCADE"
-            displayName: 'DROP SCHEMA'
-            env:
-              PGPASSWORD: $(PGPASSWORD)
+              OWNER=$(Build.Repository.Name | cut -d'/' -f1)
+              REPO=$(Build.Repository.Name | cut -d'/' -f2)
+              curl -s -X POST \
+                -H "Authorization: token $(GH_TOKEN)" \
+                -H "Accept: application/vnd.github+json" \
+                "https://api.github.com/repos/$OWNER/$REPO/issues/$PR/comments" \
+                -d "{\"body\":\"▶ **Preview**: $(PREVIEW_URL)\"}"
+            displayName: 'Comment preview URL'
+            condition: succeeded()
 
-  #--------------------------- STAGE: PRODUCTION ----------------------------
+  #───────────────── STAGE: CLEAN-UP ──────────────────
+  - stage: cleanup
+    displayName: 'Delete slot & schema on PR close'
+    condition: and(eq(variables['Build.Reason'], 'PullRequest'),
+      eq(variables['System.PullRequest.PullRequestAction'], 'Closed'))
+    jobs:
+      - job: cleanup_job
+        pool: { vmImage: ubuntu-latest }
+        steps:
+          - checkout: none
+          - bash: |
+              source $HOME/helpers.sh
+              PR=$(System.PullRequest.PullRequestId)
+              SLOT="pr-${PR}"
+              # drop schema
+              psql "postgres://$(PGUSER):$(PGPASSWORD)@$(PGHOST):$(PGPORT)/main" \
+                   -c "DROP SCHEMA IF EXISTS pr_${PR} CASCADE"
+              # delete slot
+              az webapp deployment slot delete -g $RG -n $APP_NAME --slot $SLOT
+            env: { PGPASSWORD: $(PGPASSWORD) }
+            displayName: 'Drop schema & slot'
+
+  #───────────────── STAGE: PRODUCTION ────────────────
   - stage: production
     displayName: 'Deploy main to production'
-    dependsOn: [] # ignore earlier stages, prod is independent
-    condition: and(
-      eq( variables['Build.SourceBranch'], 'refs/heads/main' ),
-      ne( variables['Build.Reason'], 'PullRequest' )
-      )
+    dependsOn: []
+    condition: and(eq(variables['Build.SourceBranch'], 'refs/heads/main'),
+      ne(variables['Build.Reason'], 'PullRequest'))
     jobs:
-      - job: deploy_prod
-        displayName: 'Build & deploy production'
-        pool: { vmImage: 'ubuntu-latest' }
-
+      - job: prod_job
+        pool: { vmImage: ubuntu-latest }
         steps:
           - checkout: self
-
           - bash: |
-              sudo apt-get -qq update
-              sudo apt-get -yqq install postgresql-client
-            displayName: 'Install psql client'
+              source $HOME/helpers.sh
+              sudo apt-get -qq update && sudo apt-get -yqq install postgresql-client zip
 
-          - bash: |
               export DATABASE_URL="postgres://$(PGUSER):$(PGPASSWORD)@$(PGHOST):$(PGPORT)/main"
-              echo "Running migrations on production DB in ./web..."
-              pushd web
-              npx prisma migrate deploy
-              popd
-              echo "##vso[task.setvariable variable=DATABASE_URL;issecret=true]${DATABASE_URL}"
-            displayName: 'Migrate main DB'
-            env:
-              PGPASSWORD: $(PGPASSWORD)
 
-          - task: AzureStaticWebApp@0
-            displayName: 'Deploy Static Web App (production)'
-            inputs:
-              azure_static_web_apps_api_token: $(SWA_TOKEN)
-              app_location: $(APP_LOCATION)
-              output_location: $(OUTPUT_LOCATION)
-              production_branch: 'main'
-            env:
-              DATABASE_URL: $(DATABASE_URL)
+              #── migrate shared DB ─────────────────────────
+              pushd web
+              npm ci
+              npx prisma migrate deploy --schema ./prisma/schema.prisma
+              npm run build
+              popd
+
+              make_zip
+
+              #── set settings & deploy artefact ────────────
+              set_settings "" WEBSITE_RUN_FROM_PACKAGE=1 DATABASE_URL="$DATABASE_URL"
+              az webapp deploy -g $RG -n $APP_NAME --type zip --src-path app.zip
+            env: { PGPASSWORD: $(PGPASSWORD) }
+            displayName: 'Build, package, deploy prod'
