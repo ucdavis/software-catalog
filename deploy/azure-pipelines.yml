@@ -24,55 +24,40 @@ variables:
   - name: APP_NAME
     value: 'app-template-web'
 
-# ───────────── COMMON FUNCTIONS (Bash) ─────────────
-# every Bash step will source these helpers
-steps:
-  - bash: |
-      cat <<'SCRIPT' > $HOME/helpers.sh
-      # create a slot if it doesn't exist
-      ensure_slot() {
-        az webapp deployment slot show -g $RG -n $APP_NAME -s "$1" >/dev/null 2>&1 ||
-        az webapp deployment slot create -g $RG -n $APP_NAME --slot "$1"
-      }
-      # zip current repo into app.zip
-      make_zip() {
-        zip -r app.zip * .[!.]*
-      }
-      # set app settings (handles root or slot)
-      set_settings() {
-        local slot_flag=""
-        [ -n "$1" ] && slot_flag="--slot $1"
-        shift
-        az webapp config appsettings set -g $RG -n $APP_NAME $slot_flag --settings "$@"
-      }
-      SCRIPT
-    displayName: 'Write helper script'
-
-#───────────────── STAGE: PREVIEW ───────────────────
+# ─────────────────── PREVIEW  (slot per PR) ───────────────────
 stages:
   - stage: preview
-    displayName: 'PR preview slot'
     condition: and(eq(variables['Build.Reason'], 'PullRequest'),
       ne(variables['System.PullRequest.PullRequestAction'], 'Closed'))
     jobs:
       - job: build_preview
-        pool: { vmImage: ubuntu-latest }
+        pool: { vmImage: 'ubuntu-latest' }
+
         steps:
           - checkout: self
+
           - bash: |
-              source $HOME/helpers.sh
+              set -e
               sudo apt-get -qq update && sudo apt-get -yqq install postgresql-client zip
 
+              # ───── helper functions (local to this script) ─────
+              ensure_slot() {
+                az webapp deployment slot show -g $RG -n $APP_NAME -s "$1" >/dev/null 2>&1 ||
+                az webapp deployment slot create -g $RG -n $APP_NAME --slot "$1"
+              }
+              make_zip() { zip -r app.zip * .[!.]* ; }
+
+              # ───── per-PR variables ─────
               PR=$(System.PullRequest.PullRequestId)
               SLOT="pr-${PR}"
               export PGSCHEMA="pr_${PR}"
               export DATABASE_URL="postgres://$(PGUSER):$(PGPASSWORD)@$(PGHOST):$(PGPORT)/main?schema=${PGSCHEMA}"
 
-              #── DB schema per PR ──────────────────────────
+              # ───── create schema ─────
               psql "postgres://$(PGUSER):$(PGPASSWORD)@$(PGHOST):$(PGPORT)/main" \
                    -c "CREATE SCHEMA IF NOT EXISTS ${PGSCHEMA}"
 
-              #── Build & package artefact ──────────────────
+              # ───── CI build ─────
               pushd web
               npm ci
               npx prisma generate --schema ./prisma/schema.prisma
@@ -80,24 +65,20 @@ stages:
               popd
               make_zip
 
-              #── Create / update slot & settings ───────────
+              # ───── slot deploy ─────
               ensure_slot "$SLOT"
-              set_settings "$SLOT" \
-                WEBSITE_RUN_FROM_PACKAGE=1 \
-                DATABASE_URL="$DATABASE_URL" \
-                PGSCHEMA="$PGSCHEMA"
-
-              #── Deploy zip to slot ────────────────────────
+              az webapp config appsettings set -g $RG -n $APP_NAME --slot $SLOT \
+                   --settings WEBSITE_RUN_FROM_PACKAGE=1 \
+                              DATABASE_URL="$DATABASE_URL" \
+                              PGSCHEMA="$PGSCHEMA"
               az webapp deploy -g $RG -n $APP_NAME --slot $SLOT \
                                --type zip --src-path app.zip
 
               echo "##vso[task.setvariable variable=PREVIEW_URL]https://$APP_NAME-$SLOT.azurewebsites.net"
             env: { PGPASSWORD: $(PGPASSWORD) }
-            displayName: 'Build, package, deploy to PR slot'
+            displayName: 'Build & deploy preview slot'
 
-          #── Comment the URL on the GitHub PR ──────────────
           - bash: |
-              set -e
               PR=$(System.PullRequest.PullRequestId)
               OWNER=$(Build.Repository.Name | cut -d'/' -f1)
               REPO=$(Build.Repository.Name | cut -d'/' -f2)
@@ -109,56 +90,52 @@ stages:
             displayName: 'Comment preview URL'
             condition: succeeded()
 
-  #───────────────── STAGE: CLEAN-UP ──────────────────
+  # ─────────────────── CLEAN-UP when PR closed ───────────────────
   - stage: cleanup
-    displayName: 'Delete slot & schema on PR close'
     condition: and(eq(variables['Build.Reason'], 'PullRequest'),
       eq(variables['System.PullRequest.PullRequestAction'], 'Closed'))
     jobs:
       - job: cleanup_job
-        pool: { vmImage: ubuntu-latest }
+        pool: { vmImage: 'ubuntu-latest' }
         steps:
-          - checkout: none
           - bash: |
-              source $HOME/helpers.sh
+              set -e
+              sudo apt-get -qq update && sudo apt-get -yqq install postgresql-client
               PR=$(System.PullRequest.PullRequestId)
               SLOT="pr-${PR}"
-              # drop schema
+
               psql "postgres://$(PGUSER):$(PGPASSWORD)@$(PGHOST):$(PGPORT)/main" \
-                   -c "DROP SCHEMA IF EXISTS pr_${PR} CASCADE"
-              # delete slot
-              az webapp deployment slot delete -g $RG -n $APP_NAME --slot $SLOT
+                   -c "DROP SCHEMA IF EXISTS pr_${PR} CASCADE" || true
+              az webapp deployment slot delete -g $RG -n $APP_NAME --slot $SLOT || true
             env: { PGPASSWORD: $(PGPASSWORD) }
             displayName: 'Drop schema & slot'
 
-  #───────────────── STAGE: PRODUCTION ────────────────
+  # ─────────────────── PRODUCTION on main ───────────────────────
   - stage: production
-    displayName: 'Deploy main to production'
     dependsOn: []
-    condition: and(eq(variables['Build.SourceBranch'], 'refs/heads/main'),
-      ne(variables['Build.Reason'], 'PullRequest'))
+    condition: and(eq(variables['Build.SourceBranch'],'refs/heads/main'),
+      ne(variables['Build.Reason'],'PullRequest'))
     jobs:
-      - job: prod_job
-        pool: { vmImage: ubuntu-latest }
+      - job: deploy_prod
+        pool: { vmImage: 'ubuntu-latest' }
         steps:
           - checkout: self
           - bash: |
-              source $HOME/helpers.sh
+              set -e
               sudo apt-get -qq update && sudo apt-get -yqq install postgresql-client zip
 
               export DATABASE_URL="postgres://$(PGUSER):$(PGPASSWORD)@$(PGHOST):$(PGPORT)/main"
 
-              #── migrate shared DB ─────────────────────────
               pushd web
               npm ci
               npx prisma migrate deploy --schema ./prisma/schema.prisma
+              npx prisma generate --schema ./prisma/schema.prisma
               npm run build
               popd
+              zip -r app.zip * .[!.]*
 
-              make_zip
-
-              #── set settings & deploy artefact ────────────
-              set_settings "" WEBSITE_RUN_FROM_PACKAGE=1 DATABASE_URL="$DATABASE_URL"
+              az webapp config appsettings set -g $RG -n $APP_NAME \
+                   --settings WEBSITE_RUN_FROM_PACKAGE=1 DATABASE_URL="$DATABASE_URL"
               az webapp deploy -g $RG -n $APP_NAME --type zip --src-path app.zip
             env: { PGPASSWORD: $(PGPASSWORD) }
-            displayName: 'Build, package, deploy prod'
+            displayName: 'Build, migrate, deploy prod'
