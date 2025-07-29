@@ -36,47 +36,58 @@ stages:
         steps:
           - checkout: self
 
-          - bash: |
-              set -e
-              sudo apt-get -qq update && sudo apt-get -yqq install postgresql-client zip
-
-              # ───── helper functions (local to this script) ─────
-              ensure_slot() {
-                az webapp deployment slot show -g $RG -n $APP_NAME -s "$1" >/dev/null 2>&1 ||
-                az webapp deployment slot create -g $RG -n $APP_NAME --slot "$1"
-              }
-              make_zip() { zip -r app.zip * .[!.]* ; }
-
-              # ───── per-PR variables ─────
-              PR=$(System.PullRequest.PullRequestId)
-              SLOT="pr-${PR}"
-              export PGSCHEMA="pr_${PR}"
-              export DATABASE_URL="postgres://$(PGUSER):$(PGPASSWORD)@$(PGHOST):$(PGPORT)/main?schema=${PGSCHEMA}"
-
-              # ───── create schema ─────
-              psql "postgres://$(PGUSER):$(PGPASSWORD)@$(PGHOST):$(PGPORT)/main" \
-                   -c "CREATE SCHEMA IF NOT EXISTS ${PGSCHEMA}"
-
-              # ───── CI build ─────
-              pushd web
-              npm ci
-              npx prisma migrate deploy --schema ./prisma/schema.prisma
-              npm run build
-              popd
-              make_zip
-
-              # ───── slot deploy ─────
-              ensure_slot "$SLOT"
-              az webapp config appsettings set -g $RG -n $APP_NAME --slot $SLOT \
-                   --settings WEBSITE_RUN_FROM_PACKAGE=1 \
-                              DATABASE_URL="$DATABASE_URL" \
-                              PGSCHEMA="$PGSCHEMA"
-              az webapp deploy -g $RG -n $APP_NAME --slot $SLOT \
-                               --type zip --src-path app.zip
-
-              echo "##vso[task.setvariable variable=PREVIEW_URL]https://$APP_NAME-$SLOT.azurewebsites.net"
-            env: { PGPASSWORD: $(PGPASSWORD) }
+          - task: AzureCLI@2
             displayName: 'Build & deploy preview slot'
+            env:
+              RG: $(RG)
+              APP_NAME: $(APP_NAME)
+              PGUSER: $(PGUSER)
+              PGPASSWORD: $(PGPASSWORD)
+              PGHOST: $(PGHOST)
+              PGPORT: $(PGPORT)
+            inputs:
+              azureSubscription: 'CaesTestDeploy'
+              scriptType: bash
+              scriptLocation: inlineScript
+              inlineScript: |
+                set -e
+                sudo apt-get -qq update && sudo apt-get -yqq install postgresql-client zip
+
+                # ───── helper functions (local to this script) ─────
+                ensure_slot() {
+                  az webapp deployment slot show -g $RG -n $APP_NAME -s "$1" >/dev/null 2>&1 ||
+                  az webapp deployment slot create -g $RG -n $APP_NAME --slot "$1"
+                }
+                make_zip() { zip -r app.zip * .[!.]* ; }
+
+                # ───── per-PR variables ─────
+                PR=$(System.PullRequest.PullRequestId)
+                SLOT="pr-${PR}"
+                export PGSCHEMA="pr_${PR}"
+                export DATABASE_URL="postgres://$(PGUSER):$(PGPASSWORD)@$(PGHOST):$(PGPORT)/main?schema=${PGSCHEMA}"
+
+                # ───── create schema ─────
+                psql "postgres://$(PGUSER):$(PGPASSWORD)@$(PGHOST):$(PGPORT)/main" \
+                    -c "CREATE SCHEMA IF NOT EXISTS ${PGSCHEMA}"
+
+                # ───── CI build ─────
+                pushd web
+                npm ci
+                npx prisma migrate deploy --schema ./prisma/schema.prisma
+                npm run build
+                popd
+                make_zip
+
+                # ───── slot deploy ─────
+                ensure_slot "$SLOT"
+                az webapp config appsettings set -g $RG -n $APP_NAME --slot $SLOT \
+                    --settings WEBSITE_RUN_FROM_PACKAGE=1 \
+                                DATABASE_URL="$DATABASE_URL" \
+                                PGSCHEMA="$PGSCHEMA"
+                az webapp deploy -g $RG -n $APP_NAME --slot $SLOT \
+                                --type zip --src-path app.zip
+
+                echo "##vso[task.setvariable variable=PREVIEW_URL]https://$APP_NAME-$SLOT.azurewebsites.net"
 
           - bash: |
               PR=$(System.PullRequest.PullRequestId)
@@ -120,21 +131,32 @@ stages:
         pool: { vmImage: 'ubuntu-latest' }
         steps:
           - checkout: self
-          - bash: |
-              set -e
-              sudo apt-get -qq update && sudo apt-get -yqq install postgresql-client zip
+          - task: AzureCLI@2
+            displayName: 'Build & deploy preview slot'
+            env:
+              RG: $(RG)
+              APP_NAME: $(APP_NAME)
+              PGUSER: $(PGUSER)
+              PGPASSWORD: $(PGPASSWORD)
+              PGHOST: $(PGHOST)
+              PGPORT: $(PGPORT)
+            inputs:
+              azureSubscription: 'CaesTestDeploy'
+              scriptType: bash
+              scriptLocation: inlineScript
+              inlineScript: |
+                set -e
+                sudo apt-get -qq update && sudo apt-get -yqq install postgresql-client zip
 
-              export DATABASE_URL="postgres://$(PGUSER):$(PGPASSWORD)@$(PGHOST):$(PGPORT)/main"
+                export DATABASE_URL="postgres://$(PGUSER):$(PGPASSWORD)@$(PGHOST):$(PGPORT)/main"
 
-              pushd web
-              npm ci
-              npx prisma migrate deploy --schema ./prisma/schema.prisma
-              npm run build
-              popd
-              zip -r app.zip * .[!.]*
+                pushd web
+                npm ci
+                npx prisma migrate deploy --schema ./prisma/schema.prisma
+                npm run build
+                popd
+                zip -r app.zip * .[!.]*
 
-              az webapp config appsettings set -g $RG -n $APP_NAME \
-                   --settings WEBSITE_RUN_FROM_PACKAGE=1 DATABASE_URL="$DATABASE_URL"
-              az webapp deploy -g $RG -n $APP_NAME --type zip --src-path app.zip
-            env: { PGPASSWORD: $(PGPASSWORD) }
-            displayName: 'Build, migrate, deploy prod'
+                az webapp config appsettings set -g $RG -n $APP_NAME \
+                    --settings WEBSITE_RUN_FROM_PACKAGE=1 DATABASE_URL="$DATABASE_URL"
+                az webapp deploy -g $RG -n $APP_NAME --type zip --src-path app.zip
