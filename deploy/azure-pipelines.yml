@@ -109,17 +109,28 @@ stages:
       - job: cleanup_job
         pool: { vmImage: 'ubuntu-latest' }
         steps:
-          - bash: |
-              set -e
-              sudo apt-get -qq update && sudo apt-get -yqq install postgresql-client
-              PR=$(System.PullRequest.PullRequestId)
-              SLOT="pr-${PR}"
-
-              psql "postgres://$(PGUSER):$(PGPASSWORD)@$(PGHOST):$(PGPORT)/main" \
-                   -c "DROP SCHEMA IF EXISTS pr_${PR} CASCADE" || true
-              az webapp deployment slot delete -g $RG -n $APP_NAME --slot $SLOT || true
-            env: { PGPASSWORD: $(PGPASSWORD) }
+          - task: AzureCLI@2
             displayName: 'Drop schema & slot'
+            env:
+              RG: $(RG)
+              APP_NAME: $(APP_NAME)
+              PGUSER: $(PGUSER)
+              PGPASSWORD: $(PGPASSWORD)
+              PGHOST: $(PGHOST)
+              PGPORT: $(PGPORT)
+            inputs:
+              azureSubscription: 'CaesTestDeploy'
+              scriptType: bash
+              scriptLocation: inlineScript
+              inlineScript: |
+                set -e
+                sudo apt-get -qq update && sudo apt-get -yqq install postgresql-client
+                PR=$(System.PullRequest.PullRequestId)
+                SLOT="pr-${PR}"
+
+                psql "postgres://$(PGUSER):$(PGPASSWORD)@$(PGHOST):$(PGPORT)/main" \
+                    -c "DROP SCHEMA IF EXISTS pr_${PR} CASCADE" || true
+                az webapp deployment slot delete -g $RG -n $APP_NAME --slot $SLOT || true
 
   # ─────────────────── PRODUCTION on main ───────────────────────
   - stage: production
@@ -132,7 +143,7 @@ stages:
         steps:
           - checkout: self
           - task: AzureCLI@2
-            displayName: 'Build & deploy preview slot'
+            displayName: 'Build & deploy production slot'
             env:
               RG: $(RG)
               APP_NAME: $(APP_NAME)
