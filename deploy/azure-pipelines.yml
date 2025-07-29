@@ -60,7 +60,7 @@ stages:
               # ───── CI build ─────
               pushd web
               npm ci
-              npx prisma generate --schema ./prisma/schema.prisma
+              npx prisma migrate deploy --schema ./prisma/schema.prisma
               npm run build
               popd
               make_zip
@@ -129,7 +129,6 @@ stages:
               pushd web
               npm ci
               npx prisma migrate deploy --schema ./prisma/schema.prisma
-              npx prisma generate --schema ./prisma/schema.prisma
               npm run build
               popd
               zip -r app.zip * .[!.]*
