@@ -58,7 +58,7 @@ stages:
                   az webapp deployment slot show -g $RG -n $APP_NAME -s "$1" >/dev/null 2>&1 ||
                   az webapp deployment slot create -g $RG -n $APP_NAME --slot "$1"
                 }
-                make_zip() { zip -r app.zip * .[!.]* ; }
+                make_zip() { zip -r ../app.zip * .[!.]* ; }
 
                 # ───── per-PR variables ─────
                 PR=$(System.PullRequest.PullRequestId)
@@ -165,7 +165,7 @@ stages:
                 npm ci
                 npx prisma migrate deploy --schema ./prisma/schema.prisma
                 npm run build
-                zip -r app.zip * .[!.]*
+                zip -r ../app.zip * .[!.]*
                 popd
 
                 az webapp config appsettings set -g $RG -n $APP_NAME \
