@@ -75,8 +75,8 @@ stages:
                 npm ci
                 npx prisma migrate deploy --schema ./prisma/schema.prisma
                 npm run build
-                popd
                 make_zip
+                popd
 
                 # ───── slot deploy ─────
                 ensure_slot "$SLOT"
@@ -165,8 +165,8 @@ stages:
                 npm ci
                 npx prisma migrate deploy --schema ./prisma/schema.prisma
                 npm run build
-                popd
                 zip -r app.zip * .[!.]*
+                popd
 
                 az webapp config appsettings set -g $RG -n $APP_NAME \
                     --settings WEBSITE_RUN_FROM_PACKAGE=1 DATABASE_URL="$DATABASE_URL"
