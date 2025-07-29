@@ -35,30 +35,24 @@ const envSchema = z
       .enum(['development', 'production', 'test'])
       .default('development'),
   })
-  .refine(
-    (data) => {
-      // Check if CAS credentials are complete
-      const hasCas = !!(
-        data.AUTH_UCD_CAS_URL &&
-        data.AUTH_UCD_CAS_CLIENT_ID &&
-        data.AUTH_UCD_CAS_CLIENT_SECRET
-      );
+  .refine((data) => {
+    // Check if CAS credentials are complete
+    const hasCas = !!(
+      data.AUTH_UCD_CAS_URL &&
+      data.AUTH_UCD_CAS_CLIENT_ID &&
+      data.AUTH_UCD_CAS_CLIENT_SECRET
+    );
 
-      // Check if Entra ID credentials are complete
-      const hasEntra = !!(
-        data.AUTH_UCD_ENTRA_CLIENT_ID &&
-        data.AUTH_UCD_ENTRA_CLIENT_SECRET &&
-        data.AUTH_UCD_ENTRA_ISSUER
-      );
+    // Check if Entra ID credentials are complete
+    const hasEntra = !!(
+      data.AUTH_UCD_ENTRA_CLIENT_ID &&
+      data.AUTH_UCD_ENTRA_CLIENT_SECRET &&
+      data.AUTH_UCD_ENTRA_ISSUER
+    );
 
-      // At least one auth method must be configured
-      return hasCas || hasEntra; // OR: true if at least one is true
-    },
-    {
-      message:
-        'At least one complete authentication method must be provided: either UC Davis CAS credentials (URL, CLIENT_ID, CLIENT_SECRET) or Microsoft Entra ID credentials (CLIENT_ID, CLIENT_SECRET, ISSUER), or both.',
-    }
-  );
+    // At least one auth method must be configured
+    return hasCas || hasEntra;
+  }, 'At least one complete authentication method must be provided: either UC Davis CAS credentials (URL, CLIENT_ID, CLIENT_SECRET) or Microsoft Entra ID credentials (CLIENT_ID, CLIENT_SECRET, ISSUER), or both.');
 
 export const env = envSchema.parse(process.env);
 

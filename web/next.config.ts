@@ -18,6 +18,7 @@ const nextConfig: NextConfig = {
       'elastic-apm-node': '', // stub-out
     },
   },
+  output: 'standalone', // use standalone output for Docker compatibility
 };
 
 export default nextConfig;
