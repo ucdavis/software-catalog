@@ -20,9 +20,9 @@ variables:
 
   # some more constants i didn't feel like putting in secrets
   - name: RG
-  - value: 'app-template'
+    value: 'app-template'
   - name: APP_NAME
-  - value: 'app-template-web'
+    value: 'app-template-web'
 
 # ───────────── COMMON FUNCTIONS (Bash) ─────────────
 # every Bash step will source these helpers
