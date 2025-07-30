@@ -5,7 +5,7 @@ const envSchema = z.object({
   APP_NAME: z.string().min(1).default('app-template'),
 
   // Database
-  DATABASE_URL: z.url(),
+  DATABASE_URL: z.url().optional(),
 
   // NextAuth
   AUTH_SECRET: z.string().min(1),
