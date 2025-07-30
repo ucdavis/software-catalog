@@ -22,9 +22,9 @@ variables:
   - name: imageRepo
     value: apptemplateweb # docker repo inside that registry
   - name: dockerRegistryServiceConnection
-    value: acr-connection # ACR service-connection name
+    value: CaesContainerTest # ACR service-connection name
   - name: azureSubscription
-    value: spn-service-conn # ARM service-connection for CLI (deploy access to the webapp)
+    value: CaesTestDeploy # ARM service-connection for CLI (deploy access to the webapp)
   - name: resourceGroup
     value: app-template # RG containing the Web App
   - name: webAppName
