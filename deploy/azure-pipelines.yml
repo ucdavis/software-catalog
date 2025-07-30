@@ -16,158 +16,62 @@ pr: # preview deploys
 
 #---------------------------- SHARED SECRETS ------------------------------
 variables:
-  - group: app-template-ci # include PG info and GH token
+  - group: app-template-ci # most secrets should go here
+  - name: acrName
+    value: apptemplateacr # docker registry
+  - name: imageRepo
+    value: apptemplateweb # docker repo inside that registry
+  - name: dockerRegistryServiceConnection
+    value: CaesContainerTest # ACR service-connection name
+  - name: azureSubscription
+    value: CaesTestDeploy # ARM service-connection for CLI (deploy access to the webapp)
+  - name: resourceGroup
+    value: app-template # RG containing the Web App
+  - name: webAppName
+    value: app-template-web # webapp
+  - name: acrLoginServer
+    value: apptemplateacr.azurecr.io
+  - name: imageTag # full 40-char commit SHA
+    value: $(Build.SourceVersion)
+  - name: imageUri
+    value: $(acrLoginServer)/$(imageRepo):$(imageTag)
+  - name: isMain
+    value: $[eq(variables['Build.SourceBranch'], 'refs/heads/main')]
 
-  # some more constants i didn't feel like putting in secrets
-  - name: RG
-    value: 'app-template'
-  - name: APP_NAME
-    value: 'app-template-web'
-
-# ─────────────────── PREVIEW  (slot per PR) ───────────────────
 stages:
-  - stage: preview
-    condition: and(eq(variables['Build.Reason'], 'PullRequest'),
-      ne(variables['System.PullRequest.PullRequestAction'], 'Closed'))
+  # ─────────────────────────── BUILD & PUSH ────────────────────────────
+  - stage: Build
     jobs:
-      - job: build_preview
+      - job: Build
         pool: { vmImage: 'ubuntu-latest' }
-
         steps:
-          - checkout: self
-
-          - task: AzureCLI@2
-            displayName: 'Build & deploy preview slot'
-            env:
-              RG: $(RG)
-              APP_NAME: $(APP_NAME)
-              PGUSER: $(PGUSER)
-              PGPASSWORD: $(PGPASSWORD)
-              PGHOST: $(PGHOST)
-              PGPORT: $(PGPORT)
+          # Build the image and push it to ACR
+          - task: Docker@2
+            displayName: Build & Push
             inputs:
-              azureSubscription: 'CaesTestDeploy'
-              scriptType: bash
-              scriptLocation: inlineScript
-              inlineScript: |
-                set -e
-                sudo apt-get -qq update && sudo apt-get -yqq install postgresql-client zip
+              command: buildAndPush
+              repository: $(imageRepo)
+              tags: |
+                $(imageTag)
+              Dockerfile: 'web/Dockerfile'
+              containerRegistry: $(dockerRegistryServiceConnection)
 
-                # ───── helper functions (local to this script) ─────
-                ensure_slot() {
-                  az webapp deployment slot show -g $RG -n $APP_NAME -s "$1" >/dev/null 2>&1 ||
-                  az webapp deployment slot create -g $RG -n $APP_NAME --slot "$1"
-                }
-                make_zip() { zip -r ../app.zip * .[!.]* ; }
-
-                # ───── per-PR variables ─────
-                PR=$(System.PullRequest.PullRequestId)
-                SLOT="pr-${PR}"
-                export PGSCHEMA="pr_${PR}"
-                export DATABASE_URL="postgres://$(PGUSER):$(PGPASSWORD)@$(PGHOST):$(PGPORT)/main?schema=${PGSCHEMA}"
-
-                # ───── create schema ─────
-                psql "postgres://$(PGUSER):$(PGPASSWORD)@$(PGHOST):$(PGPORT)/main" \
-                    -c "CREATE SCHEMA IF NOT EXISTS ${PGSCHEMA}"
-
-                # ───── CI build ─────
-                pushd web
-                npm ci
-                npx prisma migrate deploy --schema ./prisma/schema.prisma
-                npm run build
-                make_zip
-                popd
-
-                # ───── slot deploy ─────
-                ensure_slot "$SLOT"
-                az webapp config appsettings set -g $RG -n $APP_NAME --slot $SLOT \
-                    --settings WEBSITE_RUN_FROM_PACKAGE=1 \
-                                DATABASE_URL="$DATABASE_URL" \
-                                PGSCHEMA="$PGSCHEMA"
-                az webapp deploy -g $RG -n $APP_NAME --slot $SLOT \
-                                --type zip --src-path app.zip
-
-                echo "##vso[task.setvariable variable=PREVIEW_URL]https://$APP_NAME-$SLOT.azurewebsites.net"
-
-          - bash: |
-              PR=$(System.PullRequest.PullRequestId)
-              OWNER=$(Build.Repository.Name | cut -d'/' -f1)
-              REPO=$(Build.Repository.Name | cut -d'/' -f2)
-              curl -s -X POST \
-                -H "Authorization: token $(GH_TOKEN)" \
-                -H "Accept: application/vnd.github+json" \
-                "https://api.github.com/repos/$OWNER/$REPO/issues/$PR/comments" \
-                -d "{\"body\":\"▶ **Preview**: $(PREVIEW_URL)\"}"
-            displayName: 'Comment preview URL'
-            condition: succeeded()
-
-  # ─────────────────── CLEAN-UP when PR closed ───────────────────
-  - stage: cleanup
-    condition: and(eq(variables['Build.Reason'], 'PullRequest'),
-      eq(variables['System.PullRequest.PullRequestAction'], 'Closed'))
+  # ─────────────────────────── DEPLOY TAG ──────────────────────────────
+  # eventually we'll move this to a new step and have test/slot deployments
+  - stage: Deploy
+    dependsOn: Build
     jobs:
-      - job: cleanup_job
+      - job: UpdateWebApp
         pool: { vmImage: 'ubuntu-latest' }
         steps:
           - task: AzureCLI@2
-            displayName: 'Drop schema & slot'
-            env:
-              RG: $(RG)
-              APP_NAME: $(APP_NAME)
-              PGUSER: $(PGUSER)
-              PGPASSWORD: $(PGPASSWORD)
-              PGHOST: $(PGHOST)
-              PGPORT: $(PGPORT)
+            displayName: Point Web App at new tag
             inputs:
-              azureSubscription: 'CaesTestDeploy'
+              azureSubscription: $(azureSubscription)
               scriptType: bash
               scriptLocation: inlineScript
               inlineScript: |
-                set -e
-                sudo apt-get -qq update && sudo apt-get -yqq install postgresql-client
-                PR=$(System.PullRequest.PullRequestId)
-                SLOT="pr-${PR}"
-
-                psql "postgres://$(PGUSER):$(PGPASSWORD)@$(PGHOST):$(PGPORT)/main" \
-                    -c "DROP SCHEMA IF EXISTS pr_${PR} CASCADE" || true
-                az webapp deployment slot delete -g $RG -n $APP_NAME --slot $SLOT || true
-
-  # ─────────────────── PRODUCTION on main ───────────────────────
-  - stage: production
-    dependsOn: []
-    condition: and(eq(variables['Build.SourceBranch'],'refs/heads/main'),
-      ne(variables['Build.Reason'],'PullRequest'))
-    jobs:
-      - job: deploy_prod
-        pool: { vmImage: 'ubuntu-latest' }
-        steps:
-          - checkout: self
-          - task: AzureCLI@2
-            displayName: 'Build & deploy production slot'
-            env:
-              RG: $(RG)
-              APP_NAME: $(APP_NAME)
-              PGUSER: $(PGUSER)
-              PGPASSWORD: $(PGPASSWORD)
-              PGHOST: $(PGHOST)
-              PGPORT: $(PGPORT)
-            inputs:
-              azureSubscription: 'CaesTestDeploy'
-              scriptType: bash
-              scriptLocation: inlineScript
-              inlineScript: |
-                set -e
-                sudo apt-get -qq update && sudo apt-get -yqq install postgresql-client zip
-
-                export DATABASE_URL="postgres://$(PGUSER):$(PGPASSWORD)@$(PGHOST):$(PGPORT)/main"
-
-                pushd web
-                npm ci
-                npx prisma migrate deploy --schema ./prisma/schema.prisma
-                npm run build
-                zip -r ../app.zip * .[!.]*
-                popd
-
-                az webapp config appsettings set -g $RG -n $APP_NAME \
-                    --settings WEBSITE_RUN_FROM_PACKAGE=1 DATABASE_URL="$DATABASE_URL"
-                az webapp deploy -g $RG -n $APP_NAME --type zip --src-path app.zip
+                az webapp config container set \
+                  --name            $(webAppName) \
+                  --resource-group  $(resourceGroup) \
+                  --docker-custom-image-name $(imageUri)

@@ -165,6 +165,12 @@ Migrate (setup) the database:
 npm run db:migrate
 ```
 
+Setup the Prisma client (also whenever you change the Prisma schema):
+
+```bash
+npx prisma generate
+```
+
 ### Auth
 
 By default, all pages under `src/app/(protected)` require authentication, and this includes the homepage.
