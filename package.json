@@ -57,7 +57,7 @@
     "@types/react-dom": "^19.0.0",
     "auth": "1.2.3",
     "cspell": "^9.1.5",
-    "eslint": "^9.31.0",
+    "eslint": "^9.33.0",
     "eslint-config-next": "^15.4.6",
     "postcss": "^8.5.3",
     "prettier": "^3.5.3",
