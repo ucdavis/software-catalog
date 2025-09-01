@@ -1,5 +1,5 @@
 # Use Node.js 24 Debian as base image for better DevContainer compatibility
-FROM node:24.4.0-bullseye AS dev_containers_target_stage
+FROM node:24.7.0-bullseye AS dev_containers_target_stage
 
 # Update package lists and install additional development tools
 RUN apt-get update && apt-get install -y \
