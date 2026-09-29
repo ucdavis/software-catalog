@@ -1,10 +1,18 @@
 import { fireEvent, screen } from '@testing-library/react';
-import { describe, expect, it } from 'vitest';
+import { beforeEach, describe, expect, it } from 'vitest';
 import { http, HttpResponse } from 'msw';
 import { server } from '@/test/mswUtils.ts';
 import { renderRoute } from '@/test/routerUtils.tsx';
 
 describe('notification route', () => {
+  beforeEach(() => {
+    server.use(
+      http.get('/api/notification/antiforgery', () =>
+        HttpResponse.json({ requestToken: 'test-antiforgery-token' })
+      )
+    );
+  });
+
   it('renders the notification pipeline details and sends a notification email', async () => {
     let postedBody: Record<string, unknown> | undefined;
 
@@ -18,6 +26,9 @@ describe('notification route', () => {
         })
       ),
       http.post('/api/notification/default', async ({ request }) => {
+        expect(request.headers.get('RequestVerificationToken')).toBe(
+          'test-antiforgery-token'
+        );
         postedBody = (await request.json()) as Record<string, unknown>;
         return HttpResponse.json({ to: 'preview@example.com' });
       })
@@ -81,6 +92,9 @@ describe('notification route', () => {
         })
       ),
       http.post('/api/notification/default', async ({ request }) => {
+        expect(request.headers.get('RequestVerificationToken')).toBe(
+          'test-antiforgery-token'
+        );
         postedBody = (await request.json()) as Record<string, unknown>;
         return HttpResponse.json({ to: 'explicit@example.com' });
       })
@@ -179,6 +193,9 @@ describe('notification route', () => {
         })
       ),
       http.post('/api/notification/table', async ({ request }) => {
+        expect(request.headers.get('RequestVerificationToken')).toBe(
+          'test-antiforgery-token'
+        );
         postedBody = (await request.json()) as Record<string, unknown>;
         return HttpResponse.json({ to: 'signed-in@example.com' });
       })

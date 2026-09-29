@@ -1,5 +1,6 @@
 using System.ComponentModel.DataAnnotations;
 using System.Security.Claims;
+using Microsoft.AspNetCore.Antiforgery;
 using Microsoft.AspNetCore.Mvc;
 using Server.Controllers;
 using Server.Core.Notification;
@@ -22,7 +23,20 @@ public sealed class NotificationController : ApiControllerBase
         _notificationService = notificationService;
     }
 
+    [HttpGet("antiforgery")]
+    [ResponseCache(NoStore = true, Location = ResponseCacheLocation.None)]
+    public IActionResult GetAntiforgeryToken([FromServices] IAntiforgery antiforgery)
+    {
+        if (!SampleEndpointsEnabled())
+        {
+            return NotFound();
+        }
+
+        return Ok(new { requestToken = antiforgery.GetAndStoreTokens(HttpContext).RequestToken });
+    }
+
     [HttpPost("default")]
+    [ValidateAntiForgeryToken]
     [ProducesResponseType(typeof(SendSampleNotificationResponse), StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
@@ -67,6 +81,7 @@ public sealed class NotificationController : ApiControllerBase
     }
 
     [HttpPost("table")]
+    [ValidateAntiForgeryToken]
     [ProducesResponseType(typeof(SendSampleNotificationResponse), StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]

@@ -38,23 +38,30 @@ const notificationSchema = z.object({
   to: z.union([z.literal(''), z.email('Please enter a valid email address')]),
 }) satisfies z.ZodType<NotificationForm>;
 
+async function sendNotification(
+  endpoint: 'default' | 'table',
+  value: NotificationForm | TableNotificationRequest
+) {
+  const { requestToken } = await fetchJson<{ requestToken: string }>(
+    '/api/notification/antiforgery'
+  );
+
+  return fetchJson<NotificationResponse>(`/api/notification/${endpoint}`, {
+    body: JSON.stringify(value),
+    headers: { RequestVerificationToken: requestToken },
+    method: 'POST',
+  });
+}
+
 export function NotificationExample() {
   const user = useUser();
 
   const sendNotificationMutation = useMutation({
-    mutationFn: async (value: NotificationForm) =>
-      fetchJson<NotificationResponse>('/api/notification/default', {
-        body: JSON.stringify(value),
-        method: 'POST',
-      }),
+    mutationFn: (value: NotificationForm) => sendNotification('default', value),
   });
 
   const sendTableNotificationMutation = useMutation({
-    mutationFn: async (value: TableNotificationRequest) =>
-      fetchJson<NotificationResponse>('/api/notification/table', {
-        body: JSON.stringify(value),
-        method: 'POST',
-      }),
+    mutationFn: (value: TableNotificationRequest) => sendNotification('table', value),
   });
 
   const form = useAppForm({
