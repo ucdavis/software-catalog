@@ -13,17 +13,22 @@ export interface CsvColumn<T> {
   key: keyof T;
 }
 
-function escapeCsvValue(value: CsvValue): string {
+function escapeCsvValue(
+  value: CsvValue,
+  isString = typeof value === 'string'
+): string {
   if (value === null || value === undefined) {
     return '';
   }
 
-  const stringValue = String(value);
+  const text = String(value);
+  const stringValue = isString && /^[\t\n\r+=@-]/.test(text) ? `'${text}` : text;
 
   if (
     stringValue.includes(',') ||
     stringValue.includes('"') ||
-    stringValue.includes('\n')
+    stringValue.includes('\n') ||
+    stringValue.includes('\r')
   ) {
     return `"${stringValue.replaceAll('"', '""')}"`;
   }
@@ -96,11 +101,16 @@ export function toCsv<T>(
   options?: CsvOptions
 ): string {
   const lineEnding = options?.lineEnding ?? '\n';
-  const headers = columns.map((column) => escapeCsvValue(column.header)).join(',');
+  const headers = columns
+    .map((column) => escapeCsvValue(column.header))
+    .join(',');
   const dataRows = rows.map((row) =>
     columns
       .map((column) =>
-        escapeCsvValue(formatValue(row[column.key], column.format))
+        escapeCsvValue(
+          formatValue(row[column.key], column.format),
+          typeof row[column.key] === 'string'
+        )
       )
       .join(',')
   );
@@ -122,7 +132,8 @@ export function downloadCsv(content: string, filename: string): void {
   link.download = filename;
   link.click();
 
-  URL.revokeObjectURL(url);
+  // Let the browser start the download before releasing its object URL.
+  setTimeout(() => URL.revokeObjectURL(url), 0);
 }
 
 export function downloadExcelCsv(content: string, filename: string): void {

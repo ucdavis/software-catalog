@@ -55,7 +55,7 @@ public sealed class NotificationController : ApiControllerBase
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Failed to deliver notification email to {Recipient}.", resolvedRecipient);
+            _logger.LogError(ex, "Failed to deliver notification email.");
             return StatusCode(StatusCodes.Status502BadGateway,
                 "The notification email could not be sent due to a delivery error.");
         }
@@ -110,7 +110,7 @@ public sealed class NotificationController : ApiControllerBase
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Failed to deliver table notification email to {Recipient}.", resolvedRecipient);
+            _logger.LogError(ex, "Failed to deliver table notification email.");
             return StatusCode(StatusCodes.Status502BadGateway,
                 "The notification email could not be sent due to a delivery error.");
         }
