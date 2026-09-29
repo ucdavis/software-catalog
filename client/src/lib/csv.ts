@@ -24,12 +24,7 @@ function escapeCsvValue(
   const text = String(value);
   const stringValue = isString && /^[\t\n\r+=@-]/.test(text) ? `'${text}` : text;
 
-  if (
-    stringValue.includes(',') ||
-    stringValue.includes('"') ||
-    stringValue.includes('\n') ||
-    stringValue.includes('\r')
-  ) {
+  if (/[\n\r",]/.test(stringValue)) {
     return `"${stringValue.replaceAll('"', '""')}"`;
   }
 

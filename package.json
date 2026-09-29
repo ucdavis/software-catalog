@@ -15,7 +15,16 @@
     "start:server": "dotnet watch run --project server/server.csproj --launch-profile http-cli",
     "start:client": "cd client && npm run dev:open",
     "start:client:debug": "wait-on http-get://127.0.0.1:5165/health && cd client && npm run dev",
-    "start:client:when-server-ready": "wait-on http-get://127.0.0.1:5165/health && npm run start:client"
+    "start:client:when-server-ready": "wait-on http-get://127.0.0.1:5165/health && npm run start:client",
+    "test:tooling": "node --test scripts/scan-secrets.test.mts scripts/dependabot-policy.test.mts",
+    "security": "npm run security:dependencies && npm run security:workflows && npm run security:secrets",
+    "security:dependencies": "npm run security:npm && npm run security:nuget",
+    "security:npm": "npm audit && npm audit --prefix client",
+    "security:nuget": "dotnet restore app.sln --force --no-http-cache --disable-build-servers -m:1 -p:AuditPipeline=true",
+    "security:workflows": "actionlint && zizmor --offline --strict-collection --persona regular .github/workflows/codeql.yml .github/workflows/security.yml .github/workflows/dependabot-auto-merge.yml .github/dependabot.yml",
+    "security:workflows:all": "actionlint && zizmor --offline --strict-collection --persona regular .github",
+    "security:secrets": "node scripts/scan-secrets.mts",
+    "security:history": "gitleaks git --redact --no-banner --log-opts=--all ."
   },
   "devDependencies": {
     "@types/node": "^24.3.3",

@@ -1,0 +1,80 @@
+name: Software catalog security
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+  schedule:
+    - cron: '23 8 * * 1'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: software-catalog-security-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  scan:
+    name: Software catalog security
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    steps:
+      - name: Checkout full history for secret scanning
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+          fetch-depth: 0
+
+      - name: Setup .NET
+        uses: actions/setup-dotnet@a98b56852c35b8e3190ac28c8c2271da59106c68 # v6.0.0
+        with:
+          dotnet-version: 10.0.x
+
+      - name: Setup Node.js
+        uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
+        with:
+          node-version: 22.x
+          package-manager-cache: false
+
+      # Official prebuilt binaries; no Rust, Go, or Python toolchain needed.
+      # Update each release URL and its GitHub release asset SHA-256 together.
+      - name: Install pinned scanners with verified checksums
+        shell: bash
+        run: |
+          set -euo pipefail
+          tools_dir="$RUNNER_TEMP/software-catalog-security-bin"
+          mkdir -p "$tools_dir"
+          install_tool() {
+            local name="$1" url="$2" checksum="$3"
+            local archive="$RUNNER_TEMP/$name.tar.gz"
+            curl --fail --silent --show-error --location --proto '=https' --tlsv1.2 "$url" --output "$archive"
+            echo "$checksum  $archive" | sha256sum --check --strict
+            tar -xzf "$archive" -C "$tools_dir" "$name"
+          }
+          install_tool actionlint \
+            https://github.com/rhysd/actionlint/releases/download/v1.7.12/actionlint_1.7.12_linux_amd64.tar.gz \
+            8aca8db96f1b94770f1b0d72b6dddcb1ebb8123cb3712530b08cc387b349a3d8
+          install_tool gitleaks \
+            https://github.com/gitleaks/gitleaks/releases/download/v8.30.1/gitleaks_8.30.1_linux_x64.tar.gz \
+            551f6fc83ea457d62a0d98237cbad105af8d557003051f41f3e7ca7b3f2470eb
+          install_tool zizmor \
+            https://github.com/zizmorcore/zizmor/releases/download/v1.30.1/zizmor-x86_64-unknown-linux-gnu.tar.gz \
+            e65324f4430c2717591937edcec90ccbefaf14c174f8ec9415e03ca875b46e1a
+          echo "$tools_dir" >> "$GITHUB_PATH"
+
+      - name: Audit npm and NuGet dependencies
+        run: npm run security:dependencies
+
+      - name: Check workflow syntax and run zizmor
+        if: ${{ !cancelled() }}
+        run: npm run security:workflows
+
+      - name: Scan current source for secrets with Gitleaks
+        if: ${{ !cancelled() }}
+        run: npm run security:secrets
+
+      - name: Scan Git history for secrets with Gitleaks
+        if: ${{ !cancelled() }}
+        run: npm run security:history

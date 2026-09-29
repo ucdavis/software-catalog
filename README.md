@@ -268,6 +268,16 @@ Database fixtures use EF Core's in-memory provider, so SQL Server is not require
 
 Use the [Docker sandbox](#run-the-docker-sandbox) to exercise real HTTP middleware, SQL Server migrations, and SMTP delivery. Check that Sample User can access weather data, Basic User receives `403`, and notification examples arrive in Mailpit. See [the sandbox guide](docs/SANDBOX.md) for investigation and cleanup commands. These manual checks complement the automated suites.
 
+### Dependency automation and security
+
+Dependabot groups weekly npm, NuGet, and GitHub Actions updates, including major
+versions. Verified dependency-only updates can receive automated approval and
+squash auto-merge after the required validation, security, CodeRabbit, and Codacy
+checks pass. Code-owner approval is not required. The security workflow runs
+dependency audits, actionlint, Zizmor, and Gitleaks; CodeQL analyzes C# and
+JavaScript/TypeScript separately. See [dependency automation](docs/DEPENDENCY-AUTOMATION.md)
+for local commands, policy safeguards, scanner scope, and rollout requirements.
+
 ## Azure Deployment
 
 GitHub Actions is the primary deployment path. The checked-in workflows have these responsibilities:

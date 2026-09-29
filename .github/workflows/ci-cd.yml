@@ -52,6 +52,9 @@ jobs:
       - name: Check deployment settings
         run: npm run deployment-settings:check
 
+      - name: Test dependency approval policy and secret-scan file selection
+        run: npm run test:tooling
+
       - name: Check Bicep templates
         run: |
           az bicep build --file infrastructure/azure/main.bicep --stdout > /dev/null
