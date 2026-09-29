@@ -1,11 +1,11 @@
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
-using server.core.Data;
-using server.core.Domain;
+using Server.Core.Data;
+using Server.Core.Domain;
 
 public interface IDbInitializer
 {
-    Task InitializeAsync(bool includeDevSeed, CancellationToken cancellationToken = default);
+    Task InitializeAsync(bool includeSampleData, CancellationToken cancellationToken = default);
 }
 
 public class DbInitializer : IDbInitializer
@@ -19,13 +19,13 @@ public class DbInitializer : IDbInitializer
         _logger = logger;
     }
 
-    public async Task InitializeAsync(bool includeDevSeed, CancellationToken cancellationToken = default)
+    public async Task InitializeAsync(bool includeSampleData, CancellationToken cancellationToken = default)
     {
         _logger.LogInformation("Applying database migrations...");
         await _db.Database.MigrateAsync(cancellationToken);
         _logger.LogInformation("Migrations applied.");
 
-        if (includeDevSeed)
+        if (includeSampleData)
         {
             await SeedDevelopmentAsync(cancellationToken);
         }
@@ -39,18 +39,20 @@ public class DbInitializer : IDbInitializer
     {
         if (!await _db.WeatherForecasts.AnyAsync(ct))
         {
+            // Fixed dates make fresh sandboxes reproducible for screenshots and investigation.
+            var firstDate = new DateOnly(2025, 1, 1);
             var forecasts = new[]
             {
-                new WeatherForecast { Date = DateOnly.FromDateTime(DateTime.Now.AddDays(-5)), TemperatureC = 18, Summary = "Cool" },
-                new WeatherForecast { Date = DateOnly.FromDateTime(DateTime.Now.AddDays(-4)), TemperatureC = 22, Summary = "Mild" },
-                new WeatherForecast { Date = DateOnly.FromDateTime(DateTime.Now.AddDays(-3)), TemperatureC = 35, Summary = "Hot" },
-                new WeatherForecast { Date = DateOnly.FromDateTime(DateTime.Now.AddDays(-2)), TemperatureC = 15, Summary = "Chilly" },
-                new WeatherForecast { Date = DateOnly.FromDateTime(DateTime.Now.AddDays(-1)), TemperatureC = 8, Summary = "Freezing" },
-                new WeatherForecast { Date = DateOnly.FromDateTime(DateTime.Now), TemperatureC = 25, Summary = "Warm" },
-                new WeatherForecast { Date = DateOnly.FromDateTime(DateTime.Now.AddDays(1)), TemperatureC = 28, Summary = "Balmy" },
-                new WeatherForecast { Date = DateOnly.FromDateTime(DateTime.Now.AddDays(2)), TemperatureC = 12, Summary = "Cold" },
-                new WeatherForecast { Date = DateOnly.FromDateTime(DateTime.Now.AddDays(3)), TemperatureC = 32, Summary = "Scorching" },
-                new WeatherForecast { Date = DateOnly.FromDateTime(DateTime.Now.AddDays(4)), TemperatureC = 20, Summary = "Pleasant" }
+                new WeatherForecast { Date = firstDate.AddDays(0), TemperatureC = 18, Summary = "Cool" },
+                new WeatherForecast { Date = firstDate.AddDays(1), TemperatureC = 22, Summary = "Mild" },
+                new WeatherForecast { Date = firstDate.AddDays(2), TemperatureC = 35, Summary = "Hot" },
+                new WeatherForecast { Date = firstDate.AddDays(3), TemperatureC = 15, Summary = "Chilly" },
+                new WeatherForecast { Date = firstDate.AddDays(4), TemperatureC = 8, Summary = "Freezing" },
+                new WeatherForecast { Date = firstDate.AddDays(5), TemperatureC = 25, Summary = "Warm" },
+                new WeatherForecast { Date = firstDate.AddDays(6), TemperatureC = 28, Summary = "Balmy" },
+                new WeatherForecast { Date = firstDate.AddDays(7), TemperatureC = 12, Summary = "Cold" },
+                new WeatherForecast { Date = firstDate.AddDays(8), TemperatureC = 32, Summary = "Scorching" },
+                new WeatherForecast { Date = firstDate.AddDays(9), TemperatureC = 20, Summary = "Pleasant" }
             };
 
             _db.WeatherForecasts.AddRange(forecasts);

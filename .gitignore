@@ -6,8 +6,16 @@ project.lock.json
 .DS_Store
 *.pyc
 
-# Visual Studio Code
-.vscode
+# Visual Studio Code items unrelated to launching and debugging
+.vscode/*
+!.vscode/
+!.vscode/extensions.json
+!.vscode/launch.json
+!.vscode/tasks.json
+
+# Node
+node_modules/
+*.tsbuildinfo
 
 # User-specific files
 *.suo
@@ -15,6 +23,8 @@ project.lock.json
 *.userosscache
 *.sln.docstates
 .env
+.env.*
+!.env.example
 
 # Build results
 [Dd]ebug/
@@ -31,9 +41,16 @@ msbuild.log
 msbuild.err
 msbuild.wrn
 .aspnet/
+output/playwright/
 
 # Visual Studio 2015
 .vs/
 
 # Jetbrains
 .idea/
+
+# publish artifacts
+publish/
+
+# Local validation output and preserved follow-up work
+artifacts/
