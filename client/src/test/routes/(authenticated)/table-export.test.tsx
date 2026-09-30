@@ -41,7 +41,13 @@ describe('table export route', () => {
       }),
       http.get('/api/user/me', () => {
         userRequestCount += 1;
-        return HttpResponse.json({ id: 'user-1' });
+        return HttpResponse.json({
+          email: 'user@example.test',
+          iamId: null,
+          id: 'user-1',
+          name: 'User',
+          roles: [],
+        });
       })
     );
 
@@ -52,7 +58,9 @@ describe('table export route', () => {
         await screen.findByText('Weather forecast with export')
       ).toBeInTheDocument();
       expect(await screen.findByText('Sunny')).toBeInTheDocument();
-      expect(screen.getByRole('button', { name: 'Export' })).toBeInTheDocument();
+      expect(
+        screen.getByRole('button', { name: 'Export' })
+      ).toBeInTheDocument();
       expect(
         screen.queryByRole('button', { name: 'Export filtered' })
       ).not.toBeInTheDocument();
@@ -89,7 +97,15 @@ describe('table export route', () => {
 
     server.use(
       http.get('/api/weatherforecast', () => HttpResponse.json(forecasts)),
-      http.get('/api/user/me', () => HttpResponse.json({ id: 'user-1' }))
+      http.get('/api/user/me', () =>
+        HttpResponse.json({
+          email: 'user@example.test',
+          iamId: null,
+          id: 'user-1',
+          name: 'User',
+          roles: [],
+        })
+      )
     );
 
     const downloadExcelCsvMock = vi.mocked(downloadExcelCsv);

@@ -1,6 +1,8 @@
 import { useQuery } from '@tanstack/react-query';
 import { createFileRoute, Link } from '@tanstack/react-router';
-import { fetchJson } from '../../lib/api.ts';
+import { HttpError } from '../../lib/api.ts';
+import { weatherQueryOptions, type Forecast } from '@/queries/weather.ts';
+import { useUser } from '@/shared/auth/UserContext.tsx';
 import { DataTable } from '../../shared/dataTable.tsx';
 import { ColumnDef } from '@tanstack/react-table';
 
@@ -8,13 +10,6 @@ import { ColumnDef } from '@tanstack/react-table';
 export const Route = createFileRoute('/(authenticated)/fetch')({
   component: Dashboard,
 });
-
-interface Forecast {
-  date: string;
-  summary: string;
-  temperatureC: number;
-  temperatureF: number;
-}
 
 const columns: ColumnDef<Forecast>[] = [
   {
@@ -40,37 +35,50 @@ const columns: ColumnDef<Forecast>[] = [
 ];
 
 function Dashboard() {
-  // usually you would define the query in a separate file but this is just a demo page
-  const weatherQuery = useQuery({
-    queryFn: () => fetchJson<Forecast[]>('/api/weatherforecast'),
-    queryKey: ['weather'],
-    staleTime: 5 * 60_000, // 5 minutes
-  });
+  const user = useUser();
+  const weatherQuery = useQuery(weatherQueryOptions(user.id));
 
-  const contents =
-    weatherQuery.data === undefined ? (
-      <div className="flex items-center justify-center p-8">
-        <div className="text-center">
-          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mx-auto mb-4"></div>
-          <p className="text-gray-600 italic">
-            Loading... Please refresh once the ASP.NET backend has started. See{' '}
-            <a
-              className="text-blue-600 hover:text-blue-800 underline"
-              href="https://aka.ms/jspsintegrationreact"
-            >
-              https://aka.ms/jspsintegrationreact
-            </a>{' '}
-            for more details.
-          </p>
-        </div>
+  const contents = weatherQuery.isError ? (
+    <div className="alert alert-error" role="alert">
+      <span>
+        {weatherQuery.error instanceof HttpError &&
+        weatherQuery.error.status === 403
+          ? 'Your account cannot access weather forecasts.'
+          : 'Could not load weather forecasts. Please try again.'}
+      </span>
+      <button
+        className="btn btn-sm"
+        onClick={() => void weatherQuery.refetch()}
+        type="button"
+      >
+        Try again
+      </button>
+    </div>
+  ) : weatherQuery.isPending ? (
+    <div className="flex items-center justify-center p-8">
+      <div className="text-center">
+        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mx-auto mb-4"></div>
+        <p className="text-gray-600 italic">
+          Loading... Please refresh once the ASP.NET backend has started. See{' '}
+          <a
+            className="text-blue-600 hover:text-blue-800 underline"
+            href="https://aka.ms/jspsintegrationreact"
+          >
+            https://aka.ms/jspsintegrationreact
+          </a>{' '}
+          for more details.
+        </p>
       </div>
-    ) : (
-      <DataTable
-        columns={columns}
-        data={weatherQuery.data}
-        initialState={{ pagination: { pageSize: 5 } }}
-      />
-    );
+    </div>
+  ) : weatherQuery.data.length === 0 ? (
+    <p>No weather forecasts are available.</p>
+  ) : (
+    <DataTable
+      columns={columns}
+      data={weatherQuery.data}
+      initialState={{ pagination: { pageSize: 5 } }}
+    />
+  );
 
   return (
     <div className="min-h-screen flex items-center justify-center py-12 px-4 sm:px-6 lg:px-8">

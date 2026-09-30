@@ -29,13 +29,17 @@ public sealed class ApplicationLifetimeTests
         Assert.DoesNotContain(logs.Entries, entry => entry.Level == LogLevel.Critical);
     }
 
+#pragma warning disable S1172 // ILogger/ILoggerProvider require these parameters; this test recorder ignores categories, scopes, filtering, and event IDs.
     private sealed class RecordingLoggerProvider : ILoggerProvider
     {
         public ConcurrentQueue<(LogLevel Level, string Message)> Entries { get; } = new();
 
         public ILogger CreateLogger(string categoryName) => new RecordingLogger(Entries);
 
-        public void Dispose() { }
+        public void Dispose()
+        {
+            // The recorder owns only an in-memory queue; there are no resources to release.
+        }
 
         private sealed class RecordingLogger(ConcurrentQueue<(LogLevel Level, string Message)> entries) : ILogger
         {
@@ -47,4 +51,5 @@ public sealed class ApplicationLifetimeTests
                 entries.Enqueue((logLevel, formatter(state, exception)));
         }
     }
+#pragma warning restore S1172
 }
