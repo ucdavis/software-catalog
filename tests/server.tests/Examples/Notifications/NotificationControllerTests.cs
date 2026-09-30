@@ -327,6 +327,7 @@ public class NotificationControllerTests
         return controller;
     }
 
+#pragma warning disable S1172 // Test doubles must retain the interface parameter list.
     private sealed class FakeNotificationService : ISampleNotificationService
     {
         public List<Invocation> Invocations { get; } = [];
@@ -357,7 +358,6 @@ public class NotificationControllerTests
         }
     }
 
-#pragma warning disable S1172 // Test doubles must retain the interface parameter list.
     private sealed class ThrowingNotificationService : ISampleNotificationService
     {
         private readonly Exception _exception;

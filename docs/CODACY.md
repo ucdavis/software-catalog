@@ -1,37 +1,55 @@
-# Codacy analysis policy and PR 125 triage
+# Codacy analysis policy
 
 Codacy's quality gate remains at zero new issues of minor severity or higher.
 Keep CodeQL, compiler nullable analysis, frontend ESLint, and the security workflow
 in place. Do not exclude entire source languages or test directories to silence
 individual rules.
 
-The API returned all 139 new findings for PR 125 at commit
-`e53b9646bd9de72405205173b3bf8bc91ce9fdcd`; the dashboard displayed only 100.
-The counts below describe that snapshot, not a prediction of the next scan.
+## Active toolset
 
-## Proposed Codacy settings changes (not yet applied)
+On 2026-09-29, this repository was assigned only to
+`Copy of Default coding standard`, with four enabled tools and 206 patterns.
+The organization's `Default coding standard` is no longer assigned here.
+Configure tools through Codacy's coding standards UI; `.codacy.yml` cannot
+enable or disable tools. Multiple assigned standards combine their enabled
+rules, so assigning the default again would restore the unwanted scanners.
 
-These five changes need to be made in Codacy's Code patterns settings. They are
-not switches supported by `.codacy.yml`. Keep the tools and their other rules
-enabled.
+| Surface | Checks |
+| --- | --- |
+| C# | Codacy SonarC# (163 rules), .NET build and tests, CodeQL |
+| TypeScript/React | Repository ESLint 9 configuration in CI, TypeScript build, Vitest, CodeQL |
+| Bicep/Azure | CI builds `main.bicep` and `github-oidc.bicep`, including their modules, with the Bicep compiler and native linter |
+| Markdown | Codacy markdownlint: MD011, MD018, MD019, MD042, MD045 (link syntax, heading spacing, empty links, image alt text) |
+| Dockerfiles | Codacy Hadolint (23 rules) |
+| Shell | Codacy ShellCheck (15 rules) |
+| Dependencies, secrets, workflows | npm/NuGet audits, Dependabot, Gitleaks, actionlint, zizmor |
 
-On 2026-09-29, an attempt to apply these settings through a duplicate of the
-organization default was rolled back at the repository-assignment level. Saving
-the duplicate changed Codacy's displayed totals from 32 tools / 2,825 patterns to
-33 tools / 2,876 patterns, rather than the expected five-pattern reduction. The
-editor showed the same enabled-tool list for both standards, so the additional
-changes could not be verified. The repository continues to follow only
-`Default coding standard`; the unassigned `Copy of Default coding standard`
-contains the five deselected rules for inspection. Do not apply that copy until
-the unexplained differences are resolved.
+All other Codacy tools are disabled, including Opengrep, Lizard, hosted ESLint,
+Agentlinter, PMD, Stylelint, and Trivy. This avoids duplicate TypeScript,
+dependency, security, and formatting checks. SonarC# retains its existing rules
+except S2360 (optional parameters) and S2339 (public constants), which conflict
+with intentional API and configuration contracts. Markdown does not enforce
+line length or broad formatting preferences.
 
-| Rule | Findings | Proposed change and reason |
+## PR 125 triage
+
+At commit `7ede633166e0ee41c36efca02cae6fc71c43f113`, the PR had 116 new
+findings: 100 from the null-dereference rule, five from function length, five
+from optional parameters, three from public constants, two from core ESLint
+unused variables, and one from an interface-mandated test-double parameter.
+The counts describe that scan, before the reduced toolset was applied. The
+existing `S1172` suppression now includes `FakeNotificationService` as well as
+`ThrowingNotificationService`; these methods must retain their interface's
+parameter list.
+
+| Rule | Findings | Disposition and reason |
 | --- | ---: | --- |
-| Opengrep `Semgrep_codacy.csharp.security.null-dereference` | 96 | Disable this low-confidence syntactic rule. It matches parameter uses, including static null guards, nullable-aware parsing helpers, and value-type parameters. It does not model `ThrowIfNull`, nullable flow, or ASP.NET dependency injection. Retain C# nullable analysis and CodeQL. |
-| SonarC# `SonarCSharp_S2360` | 5 | Disable the preference for overloads over optional parameters. Optional cancellation tokens and optional recipient lists are intentional API contracts. |
-| SonarC# `SonarCSharp_S2339` | 3 | Disable the preference for static properties over constants. Configuration section and authentication scheme names are intentional constants. |
-| Lizard `Lizard_nloc-medium` | 7 | Disable the method line-count gate. It misparses the TypeScript CSV and notification helpers and counts JSX layout and test setup as oversized methods. Keep cyclomatic-complexity checks; the two actual complexity findings were refactored. |
-| ESLint `ESLint8_no-unused-vars` | 2 | Disable the core JavaScript rule that flags TypeScript function-type parameter names. Keep the repository's TypeScript-aware unused-variable rule in CI; do not disable `@typescript-eslint/no-unused-vars`. |
+| Opengrep `Semgrep_codacy.csharp.security.null-dereference` | 100 | Skip: the syntactic rule does not model `ThrowIfNull`, nullable flow, value types, or ASP.NET dependency injection. Retain C# nullable analysis and CodeQL; Opengrep is disabled. |
+| SonarC# `SonarCSharp_S2360` | 5 | Skip: optional cancellation tokens and recipient lists are intentional API contracts. Rule disabled. |
+| SonarC# `SonarCSharp_S2339` | 3 | Skip: configuration section and authentication scheme names are intentional constants. Rule disabled. |
+| Lizard `Lizard_nloc-medium` | 5 | Skip: it misparses the CSV helper and counts JSX layout and test setup as oversized methods. Lizard is disabled. Earlier actual complexity findings were refactored. |
+| ESLint `ESLint8_no-unused-vars` | 2 | Skip: these are TypeScript function-type parameter names. Hosted ESLint is disabled; the repository's TypeScript-aware unused-variable rule remains enabled. |
+| SonarC# `SonarCSharp_S1172` | 1 | Extend the existing narrow test-double suppression to the remaining interface implementation. |
 
 ## Repository changes
 
@@ -47,17 +65,21 @@ the unexplained differences are resolved.
 | SonarC# `S2737` | 1 | Replace cancellation rethrow catches with exception filters in both notification actions so cancellation propagates without becoming a delivery failure. |
 
 The existing Bicep exclusion applies only to Codacy metrics because Codacy failed
-to find a Bicep metrics tool. It does not exclude Bicep from security scanning.
+to find a Bicep metrics tool. It does not affect native Bicep validation in CI.
 
 ## Verification
 
-Local verification covers the backend test suite, frontend ESLint, YAML syntax,
-and Lizard cyclomatic complexity. Hosted Codacy must rerun after the repository
-changes are pushed and the proposed settings are applied to verify its own
-handling of suppressions and the final finding count.
+The reduced standard was saved and the repository's active tool toggles were
+verified. A fresh Codacy analysis of PR 125 at commit `7ede633` reduced the
+new-finding count from 116 to one: S1172 on the test-double cancellation token.
+Local verification passed frontend ESLint, the ten notification controller
+tests, actionlint, and `npm run security:workflows`. Hosted analysis must rerun
+after the local test-double suppression is pushed to verify its handling of
+that suppression.
 
 References:
 
 - [Codacy configuration and default-branch precedence](https://docs.codacy.com/repositories-configure/codacy-configuration-file/)
+- [Codacy coding standards](https://docs.codacy.com/organizations/using-coding-standards/)
 - [Codacy's null-dereference rule source](https://github.com/codacy/codacy-opengrep/blob/master/docs/codacy-rules.yaml)
 - [Codacy code-pattern settings](https://docs.codacy.com/repositories-configure/configuring-code-patterns/)
