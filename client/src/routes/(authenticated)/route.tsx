@@ -21,6 +21,16 @@ export const Route = createFileRoute('/(authenticated)')({
 });
 
 function AuthenticatedRouteError({ error }: ErrorComponentProps<unknown>) {
+  if (error instanceof HttpError && error.status === 401) {
+    return (
+      <main className="p-8">
+        <h1 className="text-3xl font-bold">Sign-in required</h1>
+        <a className="btn btn-primary mt-6" href="/login">
+          Sign in
+        </a>
+      </main>
+    );
+  }
   if (error instanceof HttpError && error.status === 403) {
     return (
       <main className="min-h-screen flex items-center justify-center px-4 py-12">

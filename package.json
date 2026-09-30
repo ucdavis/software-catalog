@@ -5,7 +5,7 @@
     "node": ">=22.18.0"
   },
   "scripts": {
-    "db:up": "docker compose -p software-catalog_devcontainer -f .devcontainer/docker-compose.yml up -d sql",
+    "db:up": "docker compose -p software-catalog_devcontainer -f .devcontainer/docker-compose.yml up -d --wait sql",
     "db:down": "docker compose -p software-catalog_devcontainer -f .devcontainer/docker-compose.yml stop sql",
     "db:logs": "docker compose -p software-catalog_devcontainer -f .devcontainer/docker-compose.yml logs -f sql",
     "deployment-settings:sync": "node scripts/sync-deployment-settings.mts --write",

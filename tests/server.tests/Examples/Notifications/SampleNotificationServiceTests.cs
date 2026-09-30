@@ -172,6 +172,47 @@ public class SampleNotificationServiceTests
     }
 
     [Theory]
+    [InlineData(false)]
+    [InlineData(true)]
+    public async Task Cancellation_during_rendering_propagates_without_sending_email(bool table)
+    {
+        using var cancellation = new CancellationTokenSource();
+        var email = new CaptureEmailService();
+        var renderer = new PausedNotificationRenderer();
+        var service = CreateService(email, renderer);
+        var recipients = EmailRecipients.Parse(["person@example.test"]);
+
+        var sending = table
+            ? service.SendTableAsync(recipients, "Subject", "Header", "Message",
+                [new NotificationTableRow { Title = "Row", Details = "Details", Amount = 1m }],
+                1m, cancellation.Token)
+            : service.SendAsync(recipients, "Subject", "Header", "Message", cancellation.Token);
+        try
+        {
+            await renderer.Started.Task.WaitAsync(TimeSpan.FromSeconds(5));
+            cancellation.Cancel();
+            var error = await Assert.ThrowsAnyAsync<OperationCanceledException>(
+                () => sending.WaitAsync(TimeSpan.FromSeconds(5)));
+
+            Assert.Equal(cancellation.Token, error.CancellationToken);
+            Assert.Null(email.Message);
+        }
+        finally
+        {
+            renderer.Resume.TrySetResult();
+            // Observe the owned operation even if a preceding assertion fails.
+            try
+            {
+                await sending.WaitAsync(TimeSpan.FromSeconds(5));
+            }
+            catch (OperationCanceledException) when (cancellation.IsCancellationRequested)
+            {
+                // Expected caller cancellation was asserted above.
+            }
+        }
+    }
+
+    [Theory]
     [InlineData("javascript:alert(1)")]
     [InlineData("data:text/html,hello")]
     [InlineData("/relative")]

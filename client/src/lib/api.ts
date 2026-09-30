@@ -41,8 +41,7 @@ export async function fetchJson<T>(
   // Auto-redirect on 401
   if (res.status === 401 && !skipRedirectOn401) {
     window.location.href = `/login?returnUrl=${toRedirectParam()}`;
-    // Halt the current render/update
-    return new Promise<T>(() => {});
+    throw new HttpError(res.status, url);
   }
 
   const text = await res.text();

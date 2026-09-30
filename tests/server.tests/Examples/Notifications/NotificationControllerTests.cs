@@ -306,6 +306,37 @@ public class NotificationControllerTests
         notificationService.TableInvocations.Should().ContainSingle();
     }
 
+    [Theory]
+    [InlineData(false)]
+    [InlineData(true)]
+    public async Task Caller_cancellation_is_preserved_instead_of_becoming_a_delivery_error(bool table)
+    {
+        using var cancellation = new CancellationTokenSource();
+        cancellation.Cancel();
+        var error = new OperationCanceledException(cancellation.Token);
+        var controller = CreateController(Environments.Development, new ThrowingNotificationService(error));
+
+        Func<Task> send = table
+            ? async () => await controller.SendTableSample(new TableNotificationRequest
+            {
+                To = "person@example.test",
+                Subject = "Subject",
+                Header = "Header",
+                Rows = [new TableNotificationRowRequest { Title = "Row", Details = "Details" }],
+            }, cancellation.Token)
+            : async () => await controller.SendSample(new NotificationRequest
+            {
+                To = "person@example.test",
+                Subject = "Subject",
+                Header = "Header",
+                Message = "Message",
+            }, cancellation.Token);
+
+        var caught = await Assert.ThrowsAsync<OperationCanceledException>(send);
+        Assert.Same(error, caught);
+        Assert.Equal(cancellation.Token, caught.CancellationToken);
+    }
+
     private static NotificationController CreateController(
         string environmentName,
         ISampleNotificationService notificationService,

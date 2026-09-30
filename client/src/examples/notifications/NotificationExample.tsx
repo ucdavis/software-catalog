@@ -12,9 +12,8 @@ type NotificationForm = {
   to: string;
 };
 
-type NotificationResponse = {
-  to: string;
-};
+const notificationResponseSchema = z.object({ to: z.email() });
+const antiforgeryTokenSchema = z.object({ requestToken: z.string().min(1) });
 
 type TableNotificationRow = {
   amount: number;
@@ -45,18 +44,21 @@ async function sendNotification(
   value: NotificationForm | TableNotificationRequest
 ) {
   // Share token acquisition across overlapping sends, but never cache a settled token.
-  antiforgeryTokenPromise ??= fetchJson<{ requestToken: string }>(
+  antiforgeryTokenPromise ??= fetchJson<unknown>(
     '/api/notification/antiforgery'
-  ).finally(() => {
-    antiforgeryTokenPromise = undefined;
-  });
+  )
+    .then((data) => antiforgeryTokenSchema.parse(data))
+    .finally(() => {
+      antiforgeryTokenPromise = undefined;
+    });
   const { requestToken } = await antiforgeryTokenPromise;
 
-  return fetchJson<NotificationResponse>(`/api/notification/${endpoint}`, {
+  const response = await fetchJson<unknown>(`/api/notification/${endpoint}`, {
     body: JSON.stringify(value),
     headers: { RequestVerificationToken: requestToken },
     method: 'POST',
   });
+  return notificationResponseSchema.parse(response);
 }
 
 export function NotificationExample() {
@@ -67,7 +69,8 @@ export function NotificationExample() {
   });
 
   const sendTableNotificationMutation = useMutation({
-    mutationFn: (value: TableNotificationRequest) => sendNotification('table', value),
+    mutationFn: (value: TableNotificationRequest) =>
+      sendNotification('table', value),
   });
 
   const form = useAppForm({
@@ -430,6 +433,9 @@ function buildTableExampleRequest(): TableNotificationRequest {
 }
 
 function getErrorMessage(error: unknown) {
+  if (error instanceof Error && error.name === 'ZodError') {
+    return 'The server returned an invalid response. Please try again.';
+  }
   if (error instanceof HttpError) {
     if (typeof error.body === 'string' && error.body.trim().length > 0) {
       return error.body;

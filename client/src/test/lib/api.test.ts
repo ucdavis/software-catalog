@@ -61,4 +61,18 @@ describe('fetchJson', () => {
       fetchJson('/api/example', { skipRedirectOn401: true })
     ).rejects.toBeInstanceOf(HttpError);
   });
+
+  it('redirects an expired session and rejects instead of leaving callers pending', async () => {
+    const location = { href: '', pathname: '/fetch', search: '?sort=date' };
+    vi.stubGlobal('window', { location });
+    vi.stubGlobal(
+      'fetch',
+      vi.fn().mockResolvedValue(new Response(null, { status: 401 }))
+    );
+
+    await expect(fetchJson('/api/user/me')).rejects.toMatchObject({
+      status: 401,
+    });
+    expect(location.href).toBe('/login?returnUrl=%2Ffetch%3Fsort%3Ddate');
+  });
 });

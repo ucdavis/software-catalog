@@ -89,7 +89,83 @@ public sealed class NotificationAntiforgeryTests
     private static string Cookie(HttpResponseMessage response) =>
         string.Join("; ", response.Headers.GetValues("Set-Cookie").Select(value => value.Split(';')[0]));
 
-    private static WebApplication CreateApp(RecordingNotificationService service)
+    [Theory]
+    [InlineData("default", false)]
+    [InlineData("table", false)]
+    [InlineData("default", true)]
+    [InlineData("table", true)]
+    public async Task Delivery_failures_including_internal_cancellation_return_sanitized_502(
+        string endpoint, bool internalCancellation)
+    {
+        const string privateDetails = "Private SMTP server and credential details";
+        Exception failure = internalCancellation
+            ? new TaskCanceledException(privateDetails)
+            : new InvalidOperationException(privateDetails);
+        await using var app = CreateApp(new FailingNotificationService(failure));
+        await app.StartAsync();
+        using var client = app.GetTestClient();
+        using var login = await client.GetAsync("/test-login");
+        var authCookie = Cookie(login);
+        client.DefaultRequestHeaders.Add("Cookie", authCookie);
+        using var tokenResponse = await client.GetAsync("/api/notification/antiforgery");
+        tokenResponse.EnsureSuccessStatusCode();
+        var token = (await tokenResponse.Content.ReadFromJsonAsync<TokenResponse>())!.RequestToken;
+        client.DefaultRequestHeaders.Remove("Cookie");
+        client.DefaultRequestHeaders.Add("Cookie", $"{authCookie}; {Cookie(tokenResponse)}");
+        client.DefaultRequestHeaders.Add("RequestVerificationToken", token);
+
+        using var response = await client.PostAsJsonAsync($"/api/notification/{endpoint}", new
+        {
+            to = "recipient@example.test",
+            subject = "Subject",
+            header = "Header",
+            message = "Message",
+            rows = new[] { new { title = "Row", details = "Details", amount = 1 } },
+            totalAmount = 1,
+        });
+
+        Assert.Equal(HttpStatusCode.BadGateway, response.StatusCode);
+        Assert.Equal("The notification email could not be sent due to a delivery error.",
+            await response.Content.ReadAsStringAsync());
+    }
+
+    [Theory]
+    [InlineData("default", "null")]
+    [InlineData("default", "{")]
+    [InlineData("default", "{\"to\":\"person@example.test\",\"subject\":null,\"header\":\"Header\",\"message\":\"Message\"}")]
+    [InlineData("default", "{\"to\":\"person@example.test\",\"subject\":1,\"header\":\"Header\",\"message\":\"Message\"}")]
+    [InlineData("default", "{\"to\":\"person@bad domain.test\",\"subject\":\"Subject\",\"header\":\"Header\",\"message\":\"Message\"}")]
+    [InlineData("default", "{\"to\":\"person@example.test\",\"subject\":\"Subject\",\"header\":\"Header\"}")]
+    [InlineData("table", "null")]
+    [InlineData("table", "{\"to\":\"person@example.test\",\"subject\":\"Subject\",\"header\":\"Header\"}")]
+    [InlineData("table", "{\"to\":\"person@example.test\",\"subject\":\"Subject\",\"header\":\"Header\",\"rows\":null}")]
+    [InlineData("table", "{\"to\":\"person@example.test\",\"subject\":\"Subject\",\"header\":\"Header\",\"rows\":[null]}")]
+    [InlineData("table", "{\"to\":\"person@example.test\",\"subject\":\"Subject\",\"header\":\"Header\",\"rows\":[{}]}")]
+    [InlineData("table", "{\"to\":\"person@example.test\",\"subject\":\"Subject\",\"header\":\"Header\",\"rows\":[{\"title\":\"Row\",\"details\":null}]}")]
+    public async Task Invalid_json_is_rejected_before_notification_delivery(string endpoint, string json)
+    {
+        var service = new RecordingNotificationService();
+        await using var app = CreateApp(service);
+        await app.StartAsync();
+        using var client = app.GetTestClient();
+        using var login = await client.GetAsync("/test-login");
+        var authCookie = Cookie(login);
+        client.DefaultRequestHeaders.Add("Cookie", authCookie);
+        using var tokenResponse = await client.GetAsync("/api/notification/antiforgery");
+        tokenResponse.EnsureSuccessStatusCode();
+        var token = (await tokenResponse.Content.ReadFromJsonAsync<TokenResponse>())!.RequestToken;
+        client.DefaultRequestHeaders.Remove("Cookie");
+        client.DefaultRequestHeaders.Add("Cookie", $"{authCookie}; {Cookie(tokenResponse)}");
+        client.DefaultRequestHeaders.Add("RequestVerificationToken", token);
+
+        using var content = new StringContent(json, System.Text.Encoding.UTF8, "application/json");
+        using var response = await client.PostAsync($"/api/notification/{endpoint}", content);
+
+        Assert.Equal(HttpStatusCode.BadRequest, response.StatusCode);
+        Assert.Equal(0, service.Deliveries);
+    }
+
+    private static WebApplication CreateApp(ISampleNotificationService service)
     {
         var builder = WebApplication.CreateBuilder(new WebApplicationOptions { EnvironmentName = "test" });
         builder.WebHost.UseTestServer();
@@ -118,6 +194,16 @@ public sealed class NotificationAntiforgeryTests
     private sealed record TokenResponse(string RequestToken);
 
 #pragma warning disable S1172 // Test doubles must retain the interface parameter list.
+    private sealed class FailingNotificationService(Exception failure) : ISampleNotificationService
+    {
+        public Task SendAsync(EmailRecipients recipients, string subject, string header, string message,
+            CancellationToken cancellationToken = default) => Task.FromException(failure);
+
+        public Task SendTableAsync(EmailRecipients recipients, string subject, string header, string message,
+            IReadOnlyList<NotificationTableRow> rows, decimal totalAmount, CancellationToken cancellationToken = default) =>
+            Task.FromException(failure);
+    }
+
     private sealed class RecordingNotificationService : ISampleNotificationService
     {
         public int Deliveries { get; private set; }

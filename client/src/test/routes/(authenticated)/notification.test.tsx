@@ -6,6 +6,59 @@ import { server } from '@/test/mswUtils.ts';
 import { renderRoute } from '@/test/routerUtils.tsx';
 
 describe('notification route', () => {
+  it.each(['token', 'delivery'] as const)(
+    'does not report success for an invalid %s response',
+    async (stage) => {
+      let posts = 0;
+      server.use(
+        http.get('/api/user/me', () =>
+          HttpResponse.json({
+            email: 'signed-in@example.test',
+            iamId: null,
+            id: 'user-1',
+            name: 'Taylor',
+            roles: [],
+          })
+        ),
+        http.post('/api/notification/table', () => {
+          posts += 1;
+          return HttpResponse.json({ to: null });
+        })
+      );
+      const { cleanup } = renderRoute({ initialPath: '/notification' });
+      try {
+        if (stage === 'token') {
+          server.use(
+            http.get('/api/notification/antiforgery', () =>
+              HttpResponse.json({ requestToken: '' })
+            )
+          );
+        }
+        await userEvent
+          .setup()
+          .click(
+            await screen.findByRole('button', {
+              name: 'Send Table Example Email',
+            })
+          );
+        expect(
+          await screen.findByText(
+            'The server returned an invalid response. Please try again.'
+          )
+        ).toBeInTheDocument();
+        expect(
+          screen.queryByText(/^Table example email sent to/)
+        ).not.toBeInTheDocument();
+        expect(posts).toBe(stage === 'token' ? 0 : 1);
+        expect(
+          screen.getByRole('button', { name: 'Send Table Example Email' })
+        ).toBeEnabled();
+      } finally {
+        cleanup();
+      }
+    }
+  );
+
   beforeEach(() => {
     server.use(
       http.get('/api/notification/antiforgery', () =>
@@ -29,6 +82,7 @@ describe('notification route', () => {
         http.get('/api/user/me', () =>
           HttpResponse.json({
             email: 'signed-in@example.com',
+            iamId: null,
             id: 'user-1',
             name: 'Taylor',
             roles: [],
@@ -119,6 +173,7 @@ describe('notification route', () => {
       http.get('/api/user/me', () =>
         HttpResponse.json({
           email: 'signed-in@example.com',
+          iamId: null,
           id: 'user-1',
           name: 'Taylor',
           roles: [],
@@ -185,6 +240,7 @@ describe('notification route', () => {
       http.get('/api/user/me', () =>
         HttpResponse.json({
           email: 'signed-in@example.com',
+          iamId: null,
           id: 'user-1',
           name: 'Taylor',
           roles: [],
@@ -241,6 +297,7 @@ describe('notification route', () => {
       http.get('/api/user/me', () =>
         HttpResponse.json({
           email: 'signed-in@example.com',
+          iamId: null,
           id: 'user-1',
           name: 'Taylor',
           roles: [],
@@ -286,6 +343,7 @@ describe('notification route', () => {
       http.get('/api/user/me', () =>
         HttpResponse.json({
           email: 'signed-in@example.com',
+          iamId: null,
           id: 'user-1',
           name: 'Taylor',
           roles: [],

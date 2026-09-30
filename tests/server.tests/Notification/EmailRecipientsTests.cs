@@ -1,8 +1,6 @@
 using System.ComponentModel.DataAnnotations;
 using System.Text.Json;
 using FluentAssertions;
-using Microsoft.Extensions.Logging.Abstractions;
-using Microsoft.Extensions.Options;
 using Server.Core.Notification;
 
 namespace Server.Tests.Notification;
@@ -46,26 +44,15 @@ public class EmailRecipientsTests
     [InlineData("To")]
     [InlineData("Cc")]
     [InlineData("Bcc")]
-    public async Task Send_rejects_a_mixed_recipient_list_before_connecting_to_smtp(string field)
+    public void Parsing_rejects_a_mixed_recipient_list(string field)
     {
         string[] mixedRecipients = ["valid@example.test", "person@bad domain.test"];
-        // No SMTP host: malformed input must be rejected before a connection is attempted.
-        var service = new EmailService(Options.Create(new SmtpOptions
-        {
-            FromName = "Template App",
-            FromEmail = "no-reply@example.test",
-        }), NullLogger<EmailService>.Instance);
-
-        var send = async () =>
-        {
-            var recipients = EmailRecipients.Parse(
+        var parse = () => EmailRecipients.Parse(
                 field == "To" ? mixedRecipients : ["person@example.test"],
                 field == "Cc" ? mixedRecipients : [],
                 field == "Bcc" ? mixedRecipients : []);
-            await service.SendAsync(EmailMessage.Create(recipients, "Subject", "Message"));
-        };
 
-        await send.Should().ThrowAsync<ValidationException>()
+        parse.Should().Throw<ValidationException>()
             .WithMessage($"'{field}' contains an invalid email address.");
     }
 
