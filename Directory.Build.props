@@ -1,4 +1,9 @@
 <Project>
+  <PropertyGroup>
+    <EnableNETAnalyzers>true</EnableNETAnalyzers>
+    <AnalysisLevel>10.0</AnalysisLevel>
+    <AnalysisModeSecurity>All</AnalysisModeSecurity>
+  </PropertyGroup>
   <!-- Keep ordinary builds usable offline after restore; make the explicit
        security audit fail on advisories AND unavailable advisory sources. -->
   <PropertyGroup Condition="'$(AuditPipeline)' == 'true'">

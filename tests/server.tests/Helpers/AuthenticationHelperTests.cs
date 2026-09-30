@@ -31,7 +31,7 @@ public class AuthenticationHelperTests : IDisposable
         var services = new ServiceCollection();
         services.AddLogging();
         services.AddSingleton<IConfiguration>(configuration);
-        services.AddScoped(_ => TestDbContextFactory.CreateInMemory());
+        services.AddScoped(_ => TestDbContextFactory.CreateSqlite());
         services.AddScoped<IUserService, UserService>();
         services.AddAuthenticationServices(configuration, new TestEnvironment());
         _provider = services.BuildServiceProvider();

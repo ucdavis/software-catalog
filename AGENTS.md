@@ -17,6 +17,15 @@ not authorize Git mutations.
 
 Follow `.github/pull_request_template.md` when creating or updating pull requests, including through the CLI. Use a concise, descriptive title and describe the final change. Remove optional sections that do not apply, and never claim validation that was not performed.
 
+## Dependency updates and CodeRabbit
+
+Follow [Dependency updates and review](docs/DEPENDENCY_UPDATES.md) for the
+Dependabot approval policy, required GitHub checks, CodeRabbit settings, and local
+review/security commands. Keep the approval workflow and its behavioral tests in
+sync. Do not weaken protections to make a dependency update merge. Run
+`npm run test:tooling`, `npm run deployment-settings:typecheck`, and
+`npm run security:workflows` after changes to this policy or its workflows.
+
 ## Docker sandbox for investigation
 
 Use the [Docker sandbox quick start](README.md#run-the-docker-sandbox) to investigate the current checkout with local sign-in and sample data. See [the sandbox guide](docs/SANDBOX.md) for role checks, logs, alternate ports, and browser investigation.
@@ -192,12 +201,17 @@ See [Development Architecture](docs/ARCHITECTURE.md#development-request-flow) fo
 - `cd client && npm run build` - Build the frontend for production
 - `cd client && npm run lint` - Run ESLint
 - Client test commands: see [Client tests](README.md#client-tests).
+- `npm run check` - Incremental lint, build, and fast tests
+- `just ci` / `npm run ci` - Clean analyzer build, fast tests, and security audits
+- `npm run test:sql` / `npm run test:browser` - Separate infrastructure tests; see [Development and validation](docs/TESTING.md)
 - `dotnet test` - Execute the .NET test project(s)
 
 ### Testing
 
 - Client tests use Vitest, jsdom, and Testing Library
-- Server tests live under `tests/server.tests/`
+- Fast server tests live under `tests/server.tests/`, using SQLite and the real startup pipeline through `WebApplicationFactory`
+- SQL Server provider/migration tests live in `tests/server.sqltests/`, outside the ordinary solution test run
+- Prefer focused tests while editing; avoid replaying overlapping validation aggregates
 - Frontend route work often needs auth-aware mocking because authenticated routes preload `/api/user/me`
 
 ## Code Generation Preferences

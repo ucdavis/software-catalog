@@ -15,7 +15,7 @@ Choose the workflow that fits your task:
 
 - **Try the app:** use the [Docker sandbox](#run-the-docker-sandbox). Docker supplies the app, database, fictional users, and mail inbox.
 - **Edit with hot reload:** follow [development setup](#set-up-for-development) for your host or VS Code DevContainer.
-- **Run checks:** see [Testing](#testing). The automated suites require no running database or external services.
+- **Run checks:** see [Testing](#testing). Fast tests need no running services; SQL Server and browser checks have separate setup.
 
 For a new deployment, follow the [customization guide](README.customization.md) and [Azure deployment setup](#azure-deployment). See the [template baseline](#template-baseline) for the upstream revision and runtime requirements.
 
@@ -148,7 +148,7 @@ See [Development Architecture](docs/ARCHITECTURE.md) for request-flow diagrams a
 
 ## Configuration
 
-The backend loads `appsettings.json`, environment-specific JSON, `server/.env`, and an optional `server/.env.<environment>`. OS environment variables take precedence over these files. See [the example configuration](server/.env.example) for supported local settings.
+The backend loads `appsettings.json`, environment-specific JSON, `server/.env`, and an optional `server/.env.<environment>`. OS environment variables take precedence over these files; explicit command-line arguments have highest precedence. See [the example configuration](server/.env.example) for supported local settings.
 
 ### Database configuration
 
@@ -233,26 +233,27 @@ Build the complete application from the repository root:
 dotnet publish server/server.csproj --configuration Release --output publish/web
 ```
 
-The publish target installs frontend dependencies with `npm ci`, runs the Vite build, and includes its output in `publish/web/wwwroot`. Node.js is required on the build machine; the published application runs on ASP.NET Core with its database and authentication configuration. `npm --prefix client run preview` previews frontend assets only and is not the complete application host.
+The standalone publish target installs frontend dependencies with `npm ci`, runs the Vite build, and includes its output in `publish/web/wwwroot`. After building in the same validation run, `npm run publish:built` reuses the existing Release build and frontend assets; see [publishing without repeated builds](docs/TESTING.md#publishing-without-repeated-builds). Node.js is required on the build machine; the published application runs on ASP.NET Core with its database and authentication configuration. `npm --prefix client run preview` previews frontend assets only and is not the complete application host.
 
 ## Testing
 
-After restoring dependencies, run these checks from the repository root before opening a PR:
+After restoring dependencies, use the incremental development gate:
 
 ```bash
-dotnet test app.sln --configuration Release
-npm --prefix client test -- --run
-npm --prefix client run lint
-npm --prefix client run build
-npm run deployment-settings:check
+npm run check
 ```
 
-The [PR validation workflow](.github/workflows/ci-cd.yml) builds and tests both projects, checks deployment settings, and compiles the Bicep templates for PRs targeting `main`. Frontend ESLint is currently a local check, not a workflow step. If you edit infrastructure, reproduce the Bicep checks with Azure CLI and Bicep installed:
+Before opening a PR, run `just ci` (or `npm run ci`) for a clean analyzer build,
+fast tests, and security audits. Install the scanners described in
+[Development and validation](docs/TESTING.md#security-and-local-review) first.
+Use focused tests while editing; these aggregates already include frontend,
+backend, and tooling tests.
 
-```bash
-az bicep build --file infrastructure/azure/main.bicep --stdout > /dev/null
-az bicep build --file infrastructure/azure/github-oidc.bicep --stdout > /dev/null
-```
+The [PR validation workflow](.github/workflows/ci-cd.yml) runs frontend ESLint,
+TypeScript/deployment-settings checks, clean builds, fast tests, Bicep compilation,
+SQL Server integration tests, and Chromium tests against the published app.
+Security and CodeQL run in separate workflows. See [Development and validation](docs/TESTING.md)
+for exact commands, focused formatting, and the distinction between each test layer.
 
 ### Client tests
 
@@ -262,20 +263,23 @@ Run `npm --prefix client test -- --run` once, or `npm --prefix client run test:w
 
 Run `dotnet test app.sln --configuration Release`, or target `tests/server.tests/server.tests.csproj` directly. The xUnit suite covers controllers, authentication helpers, notification parsing and composition, and Razor/MJML rendering. It requires no live Entra or SMTP service.
 
-Database fixtures use EF Core's in-memory provider, so SQL Server is not required. These tests do not verify SQL Server migrations or relational constraints.
+Database fixtures use SQLite, and `WebApplicationFactory<Program>` tests the real
+startup and authentication pipeline with isolated infrastructure. These tests
+need no SQL Server. The separate `npm run test:sql` suite verifies migrations and
+provider-specific behavior against SQL Server; see [its setup](docs/TESTING.md#sql-server-integration).
 
 ### Sandbox checks
 
-Use the [Docker sandbox](#run-the-docker-sandbox) to exercise real HTTP middleware, SQL Server migrations, and SMTP delivery. Check that Sample User can access weather data, Basic User receives `403`, and notification examples arrive in Mailpit. See [the sandbox guide](docs/SANDBOX.md) for investigation and cleanup commands. These manual checks complement the automated suites.
+Use the [Docker sandbox](#run-the-docker-sandbox) to exercise real HTTP middleware, SQL Server migrations, and SMTP delivery. Check that Sample User can access weather data, Basic User receives `403`, and notification examples arrive in Mailpit. See [the sandbox guide](docs/SANDBOX.md) for investigation and cleanup commands. Run `npm run test:browser` for automated sign-in, navigation, and role checks against the sandbox. See [browser setup](docs/TESTING.md#browser-smoke-tests); SMTP delivery remains a separate manual check.
 
 ### Dependency automation and security
 
-Dependabot groups weekly npm, NuGet, and GitHub Actions updates, including major
-versions. Verified dependency-only updates can receive automated approval and
+Dependabot groups weekly minor/patch npm, NuGet, and GitHub Actions updates; major
+versions have separate PRs. Verified dependency-only updates can receive automated approval and
 squash auto-merge after the required validation, security, CodeRabbit, and Codacy
 checks pass. Code-owner approval is not required. The security workflow runs
 dependency audits, actionlint, Zizmor, and Gitleaks; CodeQL analyzes C# and
-JavaScript/TypeScript separately. See [dependency automation](docs/DEPENDENCY-AUTOMATION.md)
+JavaScript/TypeScript separately. See [dependency automation](docs/DEPENDENCY_UPDATES.md)
 for local commands, policy safeguards, scanner scope, and rollout requirements.
 
 ## Azure Deployment
@@ -300,6 +304,12 @@ npm run deployment-settings:check
 Review the generated workflow and deploy-script changes together with the settings file. The template defaults catalog and generated regions have separate ownership; do not hand-edit generated regions. Infrastructure/settings configuration is separate from package deployment. The Azure guide also covers local deployment scripts, production SQL networking, and first-deploy requirements.
 
 ## Updating Dependencies
+
+Dependabot groups npm, NuGet, and GitHub Actions updates weekly. Verified updates
+can be approved automatically and queued for merging after the required checks
+and reviews. CodeRabbit reviews PRs, including drafts and dependency updates.
+See [Dependency updates and review](docs/DEPENDENCY_UPDATES.md) for the approval
+policy, GitHub activation requirements, and local review/security commands.
 
 ### Client
 
@@ -356,7 +366,9 @@ Key source directories and tooling:
 │   ├── Notification/                # Immutable email values, rendering, and SMTP
 │   ├── Views/Shared/                # Shared MJML layout and button templates
 │   └── server.core.csproj
-├── tests/server.tests/              # xUnit backend tests and EF InMemory fixtures
+├── tests/server.tests/              # xUnit, SQLite fixtures, and real startup tests
+├── tests/server.sqltests/           # SQL Server provider/migration integration tests
+├── tests/browser/                   # Playwright sign-in and navigation smoke tests
 ├── infrastructure/azure/            # Bicep, deployment settings, and deploy scripts
 ├── scripts/                         # Deployment-settings synchronization/checks
 ├── docs/                            # Architecture and sandbox guides
@@ -369,13 +381,21 @@ Key source directories and tooling:
 
 ## Available Scripts
 
-Commands below run from the repository root; `--prefix client` selects the frontend package.
+Commands below run from the repository root; `--prefix client` selects the frontend package. `package.json` owns the commands and `justfile` provides optional aliases. See [Development and validation](docs/TESTING.md) for the complete command cycle.
 
 ### Root Level
 
 | Command | Purpose |
 | --- | --- |
 | `npm start` | Run the backend watcher, wait for health, and start Vite with a browser. |
+| `npm run restore` | Restore npm packages and the main .NET solution. |
+| `npm run check` | Incremental lint, build, and fast tests. |
+| `npm run check:clean` | Clean backend compilation with the same checks and tests. |
+| `npm run ci` / `just ci` | Clean checks and security audits, each run once. |
+| `npm test` | Fast frontend, backend, and tooling tests. |
+| `npm run test:sql` | SQL Server integration tests, with explicit test connection. |
+| `npm run test:browser` | Chromium checks against a sandbox or the published smoke host. |
+| `npm run security` | Dependency, workflow, and current-source secret checks. |
 | `npm run start:server` | Run only the backend watcher with the `http-cli` profile. |
 | `npm run start:client` | Run Vite and open the browser. |
 | `npm run db:up` | Start the regular development SQL Server container. |

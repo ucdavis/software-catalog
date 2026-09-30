@@ -13,10 +13,10 @@ public class WeatherForecastControllerTests
     public async Task Get_returns_latest_20_forecasts_descending_by_date()
     {
         // Arrange
-        using AppDbContext ctx = TestDbContextFactory.CreateInMemory();
+        using AppDbContext ctx = TestDbContextFactory.CreateSqlite();
 
         // seed some data
-        var today = DateOnly.FromDateTime(DateTime.Today);
+        var today = new DateOnly(2025, 1, 1);
 
         for (int i = 0; i < 25; i++)
         {
@@ -45,11 +45,11 @@ public class WeatherForecastControllerTests
         dates.Should().BeInDescendingOrder();
 
         // The first item should be the last inserted date (today + 24)
-        var expectedTop = DateOnly.FromDateTime(DateTime.Today).AddDays(24);
+        var expectedTop = new DateOnly(2025, 1, 1).AddDays(24);
         dates.First().Should().Be(expectedTop);
 
         // The last of the 20 should be (today + 5)
-        var expectedLast = DateOnly.FromDateTime(DateTime.Today).AddDays(5);
+        var expectedLast = new DateOnly(2025, 1, 1).AddDays(5);
         dates.Last().Should().Be(expectedLast);
 
         // also sanity-check a couple of mapped properties carried through

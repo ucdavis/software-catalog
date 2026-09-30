@@ -51,6 +51,6 @@ output/playwright/
 
 # publish artifacts
 publish/
-
-# Local validation output and preserved follow-up work
 artifacts/
+test-results/
+playwright-report/

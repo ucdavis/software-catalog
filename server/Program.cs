@@ -22,7 +22,8 @@ try
         .AddJsonFile($"appsettings.{builder.Environment.EnvironmentName}.json", optional: true, reloadOnChange: true)
         .AddEnvFile(".env", optional: true) // secrets stored here
         .AddEnvFile($".env.{builder.Environment.EnvironmentName}", optional: true) // env-specific secrets
-        .AddEnvironmentVariables(); // OS env vars override everything
+        .AddEnvironmentVariables() // OS env vars override files
+        .AddCommandLine(args); // Explicit launch arguments keep ASP.NET's highest precedence
 
     // setup logging and telemetry
     TelemetryHelper.ConfigureLogging(builder.Logging);
@@ -197,3 +198,6 @@ static void ApplyNoStoreHeaders(HttpContext context)
     context.Response.Headers.Pragma = "no-cache";
     context.Response.Headers.Expires = "0";
 }
+
+// Expose the real application entry point to WebApplicationFactory integration tests.
+public partial class Program { }

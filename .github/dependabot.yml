@@ -12,6 +12,7 @@ updates:
     groups:
       npm:
         applies-to: version-updates
+        update-types: ["minor", "patch"]
         patterns: ["*"]
       npm-security:
         applies-to: security-updates
@@ -27,6 +28,7 @@ updates:
     groups:
       nuget:
         applies-to: version-updates
+        update-types: ["minor", "patch"]
         patterns: ["*"]
       nuget-security:
         applies-to: security-updates
@@ -42,6 +44,7 @@ updates:
     groups:
       github-actions:
         applies-to: version-updates
+        update-types: ["minor", "patch"]
         patterns: ["*"]
       github-actions-security:
         applies-to: security-updates

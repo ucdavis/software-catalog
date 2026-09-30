@@ -43,7 +43,7 @@ jobs:
           script: |
             const filesByEcosystem = {
               npm_and_yarn: ['package.json', 'package-lock.json', 'client/package.json', 'client/package-lock.json'],
-              nuget: ['.config/dotnet-tools.json', 'server/server.csproj', 'server.core/server.core.csproj', 'tests/server.tests/server.tests.csproj'],
+              nuget: ['.config/dotnet-tools.json', 'server/server.csproj', 'server.core/server.core.csproj', 'tests/server.tests/server.tests.csproj', 'tests/server.sqltests/server.sqltests.csproj'],
               github_actions: [
                 '.github/workflows/codeql.yml', '.github/workflows/security.yml',
                 '.github/workflows/dependabot-auto-merge.yml', '.github/workflows/ci-cd.yml',
