@@ -57,9 +57,7 @@ try
     if (string.IsNullOrWhiteSpace(conn))
     {
         const string message = "No database connection string configured. Set the DB_CONNECTION environment variable or " +
-                               "configure ConnectionStrings:DefaultConnection. For host-based local development use " +
-                               "Server=localhost,14333;Database=AppDb;User ID=sa;Password=LocalDev123!;Encrypt=False;TrustServerCertificate=True;. " +
-                               "Inside the DevContainer use Server=sql,1433;Database=AppDb;User ID=sa;Password=LocalDev123!;Encrypt=False;TrustServerCertificate=True;.";
+                               "configure ConnectionStrings:DefaultConnection. See the development setup in README.md for local connection settings.";
 
         throw new InvalidOperationException(message);
     }

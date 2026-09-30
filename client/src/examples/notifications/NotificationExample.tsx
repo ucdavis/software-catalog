@@ -38,13 +38,19 @@ const notificationSchema = z.object({
   to: z.union([z.literal(''), z.email('Please enter a valid email address')]),
 }) satisfies z.ZodType<NotificationForm>;
 
+let antiforgeryTokenPromise: Promise<{ requestToken: string }> | undefined;
+
 async function sendNotification(
   endpoint: 'default' | 'table',
   value: NotificationForm | TableNotificationRequest
 ) {
-  const { requestToken } = await fetchJson<{ requestToken: string }>(
+  // Share token acquisition across overlapping sends, but never cache a settled token.
+  antiforgeryTokenPromise ??= fetchJson<{ requestToken: string }>(
     '/api/notification/antiforgery'
-  );
+  ).finally(() => {
+    antiforgeryTokenPromise = undefined;
+  });
+  const { requestToken } = await antiforgeryTokenPromise;
 
   return fetchJson<NotificationResponse>(`/api/notification/${endpoint}`, {
     body: JSON.stringify(value),

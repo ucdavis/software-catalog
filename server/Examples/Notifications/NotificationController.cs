@@ -63,11 +63,7 @@ public sealed class NotificationController : ApiControllerBase
         {
             return BadRequest(ex.Message);
         }
-        catch (OperationCanceledException)
-        {
-            throw;
-        }
-        catch (Exception ex)
+        catch (Exception ex) when (ex is not OperationCanceledException)
         {
             _logger.LogError(ex, "Failed to deliver notification email.");
             return StatusCode(StatusCodes.Status502BadGateway,
@@ -119,11 +115,7 @@ public sealed class NotificationController : ApiControllerBase
         {
             return BadRequest(ex.Message);
         }
-        catch (OperationCanceledException)
-        {
-            throw;
-        }
-        catch (Exception ex)
+        catch (Exception ex) when (ex is not OperationCanceledException)
         {
             _logger.LogError(ex, "Failed to deliver table notification email.");
             return StatusCode(StatusCodes.Status502BadGateway,

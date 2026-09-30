@@ -117,6 +117,7 @@ public sealed class NotificationAntiforgeryTests
 
     private sealed record TokenResponse(string RequestToken);
 
+#pragma warning disable S1172 // Test doubles must retain the interface parameter list.
     private sealed class RecordingNotificationService : ISampleNotificationService
     {
         public int Deliveries { get; private set; }
@@ -135,4 +136,5 @@ public sealed class NotificationAntiforgeryTests
             return Task.CompletedTask;
         }
     }
+#pragma warning restore S1172
 }

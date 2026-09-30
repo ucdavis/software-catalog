@@ -17,7 +17,8 @@ public class AccountController(IConfiguration configuration, IHostEnvironment en
         var safeReturnUrl = Url.IsLocalUrl(returnUrl) ? returnUrl! : "/";
         if (LocalAuthentication.IsEnabled(configuration, environment))
         {
-            return View("LocalLogin", safeReturnUrl);
+            // A fixed view name and a validated scalar URL; no entity model is bound or persisted.
+            return View("LocalLogin", safeReturnUrl); // nosemgrep: csharp.dotnet.security.audit.mass-assignment.mass-assignment
         }
 
         if (User.Identity?.IsAuthenticated == true)

@@ -1,6 +1,7 @@
 import { fireEvent, screen } from '@testing-library/react';
 import { beforeEach, describe, expect, it } from 'vitest';
 import { http, HttpResponse } from 'msw';
+import { userEvent } from '@testing-library/user-event';
 import { server } from '@/test/mswUtils.ts';
 import { renderRoute } from '@/test/routerUtils.tsx';
 
@@ -12,6 +13,104 @@ describe('notification route', () => {
       )
     );
   });
+
+  it.each(['success', 'failure'] as const)(
+    'shares overlapping token requests and fetches a fresh token after %s',
+    async (outcome) => {
+      const user = userEvent.setup();
+      let releaseToken!: () => void;
+      const tokenResponseReady = new Promise<void>((resolve) => {
+        releaseToken = resolve;
+      });
+      let tokenRequests = 0;
+      const posts: { endpoint: string; token: string | null }[] = [];
+
+      server.use(
+        http.get('/api/user/me', () =>
+          HttpResponse.json({
+            email: 'signed-in@example.com',
+            id: 'user-1',
+            name: 'Taylor',
+            roles: [],
+          })
+        ),
+        http.get('/api/notification/antiforgery', async () => {
+          const requestNumber = ++tokenRequests;
+          if (requestNumber === 1) {
+            await tokenResponseReady;
+            if (outcome === 'failure') {
+              return new HttpResponse('Token acquisition failed', {
+                status: 503,
+              });
+            }
+          }
+          return HttpResponse.json({ requestToken: `token-${requestNumber}` });
+        }),
+        http.post('/api/notification/:endpoint', ({ params, request }) => {
+          posts.push({
+            endpoint: String(params.endpoint),
+            token: request.headers.get('RequestVerificationToken'),
+          });
+          return HttpResponse.json({ to: 'preview@example.com' });
+        })
+      );
+
+      const { cleanup } = renderRoute({ initialPath: '/notification' });
+
+      try {
+        await user.click(
+          await screen.findByRole('button', {
+            name: 'Send Table Example Email',
+          })
+        );
+        await user.click(
+          screen.getByRole('button', { name: 'Send Notification Email' })
+        );
+        expect(
+          screen.getByRole('button', { name: /Sending Table Example/ })
+        ).toBeDisabled();
+        expect(
+          screen.getByRole('button', { name: /Submitting/ })
+        ).toBeDisabled();
+
+        releaseToken();
+
+        if (outcome === 'failure') {
+          expect(
+            await screen.findAllByText('Token acquisition failed')
+          ).toHaveLength(2);
+          expect(posts).toEqual([]);
+        } else {
+          expect(
+            await screen.findByText(/^Notification email sent to/)
+          ).toBeInTheDocument();
+          expect(
+            await screen.findByText(/^Table example email sent to/)
+          ).toBeInTheDocument();
+          expect(posts).toEqual(
+            expect.arrayContaining([
+              { endpoint: 'default', token: 'token-1' },
+              { endpoint: 'table', token: 'token-1' },
+            ])
+          );
+          expect(posts).toHaveLength(2);
+        }
+        expect(tokenRequests).toBe(1);
+
+        await user.click(
+          screen.getByRole('button', { name: 'Send Table Example Email' })
+        );
+        expect(
+          await screen.findByText(/^Table example email sent to/)
+        ).toBeInTheDocument();
+        expect(tokenRequests).toBe(2);
+        expect(posts.at(-1)).toEqual({ endpoint: 'table', token: 'token-2' });
+      } finally {
+        releaseToken();
+        cleanup();
+      }
+    }
+  );
 
   it('renders the notification pipeline details and sends a notification email', async () => {
     let postedBody: Record<string, unknown> | undefined;

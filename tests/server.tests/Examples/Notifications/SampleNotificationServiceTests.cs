@@ -176,7 +176,9 @@ public class SampleNotificationServiceTests
     [InlineData("data:text/html,hello")]
     [InlineData("/relative")]
     [InlineData("//example.test/path")]
+#pragma warning disable S2068 // Synthetic credentials verify that credential-bearing URLs are rejected.
     [InlineData("https://user:secret@example.test")]
+#pragma warning restore S2068
     public void Composition_rejects_unsafe_configured_links(string baseUrl)
     {
         var create = () => new SampleNotificationService(
@@ -256,6 +258,7 @@ public class SampleNotificationServiceTests
             Options.Create(new SmtpOptions { FromName = "Template App" }));
     }
 
+#pragma warning disable S1172 // Test doubles must retain the interface parameter list.
     private sealed class PausedNotificationRenderer : INotificationRenderer
     {
         public TaskCompletionSource Started { get; } = new(TaskCreationOptions.RunContinuationsAsynchronously);
@@ -301,4 +304,5 @@ public class SampleNotificationServiceTests
             return Task.FromResult(RenderedHtml);
         }
     }
+#pragma warning restore S1172
 }

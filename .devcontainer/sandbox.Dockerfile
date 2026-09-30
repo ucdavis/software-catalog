@@ -7,6 +7,8 @@ COPY . .
 RUN dotnet publish server/server.csproj --configuration Release --output /app/server
 
 FROM mcr.microsoft.com/dotnet/aspnet:10.0 AS app
+# Use current distro curl security patches in the local sandbox.
+# hadolint ignore=DL3008
 RUN apt-get update && apt-get install -y --no-install-recommends curl \
     && rm -rf /var/lib/apt/lists/* \
     && mkdir -p /app/.aspnet \

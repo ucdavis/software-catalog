@@ -15,37 +15,7 @@ public static class AuthenticationHelper
     {
         if (LocalAuthentication.IsEnabled(configuration, environment))
         {
-            var cookieName = ".WebAppTemplate.LocalSandbox";
-            var cookieSuffix = configuration["Auth:LocalCookieSuffix"];
-            if (!string.IsNullOrEmpty(cookieSuffix))
-            {
-                cookieName += $".{cookieSuffix}";
-                services.AddAntiforgery(options => options.Cookie.Name = $"{cookieName}.Antiforgery");
-            }
-
-            services.AddAuthentication(LocalAuthentication.Scheme)
-                .AddCookie(LocalAuthentication.Scheme, options =>
-                {
-                    options.Cookie.Name = cookieName;
-                    options.LoginPath = "/login";
-                    options.Events.OnRedirectToLogin = ctx =>
-                    {
-                        if (ctx.Request.Path.StartsWithSegments("/api"))
-                        {
-                            ctx.Response.StatusCode = StatusCodes.Status401Unauthorized;
-                        }
-                        else
-                        {
-                            ctx.Response.Redirect(ctx.RedirectUri);
-                        }
-                        return Task.CompletedTask;
-                    };
-                    options.Events.OnRedirectToAccessDenied = ctx =>
-                    {
-                        ctx.Response.StatusCode = StatusCodes.Status403Forbidden;
-                        return Task.CompletedTask;
-                    };
-                });
+            AddLocalAuthentication(services, configuration);
             return services;
         }
 
@@ -96,6 +66,41 @@ public static class AuthenticationHelper
         });
 
         return services;
+    }
+
+    private static void AddLocalAuthentication(IServiceCollection services, IConfiguration configuration)
+    {
+        var cookieName = ".WebAppTemplate.LocalSandbox";
+        var cookieSuffix = configuration["Auth:LocalCookieSuffix"];
+        if (!string.IsNullOrEmpty(cookieSuffix))
+        {
+            cookieName += $".{cookieSuffix}";
+            services.AddAntiforgery(options => options.Cookie.Name = $"{cookieName}.Antiforgery");
+        }
+
+        services.AddAuthentication(LocalAuthentication.Scheme)
+            .AddCookie(LocalAuthentication.Scheme, options =>
+            {
+                options.Cookie.Name = cookieName;
+                options.LoginPath = "/login";
+                options.Events.OnRedirectToLogin = ctx =>
+                {
+                    if (ctx.Request.Path.StartsWithSegments("/api"))
+                    {
+                        ctx.Response.StatusCode = StatusCodes.Status401Unauthorized;
+                    }
+                    else
+                    {
+                        ctx.Response.Redirect(ctx.RedirectUri);
+                    }
+                    return Task.CompletedTask;
+                };
+                options.Events.OnRedirectToAccessDenied = ctx =>
+                {
+                    ctx.Response.StatusCode = StatusCodes.Status403Forbidden;
+                    return Task.CompletedTask;
+                };
+            });
     }
 
     /// <summary>

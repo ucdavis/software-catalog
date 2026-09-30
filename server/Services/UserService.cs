@@ -19,7 +19,7 @@ public class UserService : IUserService
         _dbContext = dbContext;
     }
 
-    private async Task<List<string>> GetRolesForUser(string userId)
+    private async Task<List<string>> GetRolesForUser()
     {
         // fake role strings but use _dbContext to get real roles later
         var roles = new List<string> { "User", "SampleRole" };
@@ -38,7 +38,7 @@ public class UserService : IUserService
 
         // get user's roles
         // might want to cache w/ IMemoryCache to avoid DB hits on every request, but we'll skip that for simplicity
-        var currentRoles = await GetRolesForUser(userId);
+        var currentRoles = await GetRolesForUser();
 
         // compare roles to existing claims, only update if different
         var existingRoles = principal.Identities

@@ -10,6 +10,11 @@ export default [
     ignores: ['dist/', 'vite.config.ts.timestamp-*', 'src/routeTree.gen.ts'],
   },
   {
+    rules: {
+      // The core rule treats TypeScript function-type parameter names as variables.
+      '@typescript-eslint/no-unused-vars': 'error',
+      'no-unused-vars': 'off',
+    },
     settings: {
       'import/resolver': {
         typescript: {

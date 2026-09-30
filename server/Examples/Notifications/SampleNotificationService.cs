@@ -117,16 +117,7 @@ public sealed class SampleNotificationService : ISampleNotificationService
             throw new ValidationException("Notification header is required.");
         }
 
-        if (rows == null || rows.Count == 0)
-        {
-            throw new ValidationException("At least one table row is required.");
-        }
-
-        var parsedRows = Array.AsReadOnly(rows.ToArray());
-        if (parsedRows.Any(row => row == null || string.IsNullOrWhiteSpace(row.Title) || string.IsNullOrWhiteSpace(row.Details)))
-        {
-            throw new ValidationException("Each table row requires a title and details.");
-        }
+        var parsedRows = ParseTableRows(rows);
 
         ArgumentNullException.ThrowIfNull(recipients);
 
@@ -147,6 +138,33 @@ public sealed class SampleNotificationService : ISampleNotificationService
         };
 
 
+        var textBody = BuildTableText(header, message, parsedRows, totalAmount);
+        var htmlBody = await _notificationRenderer.RenderAsync(
+            TableTemplatePath,
+            model,
+            cancellationToken);
+
+        await _emailService.SendAsync(EmailMessage.Create(recipients, subject, textBody, htmlBody), cancellationToken);
+    }
+
+    private static IReadOnlyList<NotificationTableRow> ParseTableRows(IReadOnlyList<NotificationTableRow> rows)
+    {
+        if (rows == null || rows.Count == 0)
+        {
+            throw new ValidationException("At least one table row is required.");
+        }
+
+        var parsedRows = Array.AsReadOnly(rows.ToArray());
+        if (parsedRows.Any(row => row == null || string.IsNullOrWhiteSpace(row.Title) || string.IsNullOrWhiteSpace(row.Details)))
+        {
+            throw new ValidationException("Each table row requires a title and details.");
+        }
+
+        return parsedRows;
+    }
+
+    private static string BuildTableText(string header, string message, IReadOnlyList<NotificationTableRow> rows, decimal totalAmount)
+    {
         var textLines = new List<string>
         {
             header,
@@ -159,17 +177,11 @@ public sealed class SampleNotificationService : ISampleNotificationService
         }
 
         textLines.Add(string.Empty);
-        textLines.AddRange(parsedRows.Select(row =>
+        textLines.AddRange(rows.Select(row =>
             $"- {row.Title}: {row.Details} ({row.Amount.ToString("C2", CurrencyCulture)})"));
         textLines.Add(string.Empty);
         textLines.Add($"Total: {totalAmount.ToString("C2", CurrencyCulture)}");
 
-        var textBody = string.Join(Environment.NewLine, textLines);
-        var htmlBody = await _notificationRenderer.RenderAsync(
-            TableTemplatePath,
-            model,
-            cancellationToken);
-
-        await _emailService.SendAsync(EmailMessage.Create(recipients, subject, textBody, htmlBody), cancellationToken);
+        return string.Join(Environment.NewLine, textLines);
     }
 }

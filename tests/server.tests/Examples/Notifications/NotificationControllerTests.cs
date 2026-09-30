@@ -357,6 +357,7 @@ public class NotificationControllerTests
         }
     }
 
+#pragma warning disable S1172 // Test doubles must retain the interface parameter list.
     private sealed class ThrowingNotificationService : ISampleNotificationService
     {
         private readonly Exception _exception;
@@ -388,6 +389,8 @@ public class NotificationControllerTests
             throw _exception;
         }
     }
+
+#pragma warning restore S1172
 
     private sealed class FakeHostEnvironment : IHostEnvironment
     {
