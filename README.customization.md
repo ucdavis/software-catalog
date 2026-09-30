@@ -1,0 +1,413 @@
+# New Project Customization Guide
+
+Use this checklist right after cloning the template to ensure every new project starts with the correct identity, infrastructure settings, and clean source. Each section calls out the files to touch and optional tweaks to consider.
+
+## 1. Project Identity & Metadata (optional)
+
+- Rename the repository, solution, and npm package names so deployment artifacts read correctly:
+  - Update `name` in `package.json` (root) and `client/package.json`.
+  - If you rename the solution or projects, update `app.sln`, `server/server.csproj`, `server.core/server.core.csproj`, and any CI references.
+
+## 2. Dev Ports & SPA Proxy Wiring (optional)
+
+If you need the app to run on ports other than the default `5165` (API) and `5173` (Vite), update these locations so startup and hot reload keep working:
+
+1. `server/Properties/launchSettings.json` → update both `profiles.http.applicationUrl` and `profiles.http-cli.applicationUrl` (and IIS Express URL if you use it).
+2. `server/server.csproj` → adjust `<SpaProxyServerUrl>` so the .NET SPA proxy opens the correct Vite address.
+3. `client/vite.config.ts` → change `server.port` and the fallback backend URL used by `target`.
+4. `.devcontainer/devcontainer.json` → update `containerEnv.ASPNETCORE_URLS`, `forwardPorts`, and `portsAttributes` so port auto-forwarding stays in sync.
+5. Root `package.json` → update the backend health URLs in `start:client:debug` and `start:client:when-server-ready`.
+
+## 3. Microsoft Entra ID (Azure AD) App Sign-In Setup
+
+This section configures the Entra app registration that users sign in to through Microsoft Identity Web. It is separate from the GitHub deployment identity created later by `infrastructure/azure/github-oidc.bicep`.
+
+1. Visit https://entra.microsoft.com → **App registrations** → **New registration**.
+2. Give the app a friendly name, pick the correct supported account types, and add the following redirect URIs. Use HTTPS in production and match whatever port you configured above:
+   - `http://localhost:5173/signin-oidc` for the default Vite development flow
+   - `http://localhost:5165/signin-oidc` if you also test directly against the backend origin
+   - `https://localhost:44322/signin-oidc` if you use the default IIS Express profile
+   - Any additional public endpoints your hosting environment will expose.
+3. Under **Authentication**, enable ID tokens and add logout URLs if needed.
+4. Copy the **Directory (tenant) ID**, **Application (client) ID**, and your verified domain. At UCD tenant is always the same.
+
+Then update `server/appsettings.json`:
+
+```jsonc
+"Auth": {
+  "Instance": "https://login.microsoftonline.com/",
+  "Domain": "<your-domain>",
+  "TenantId": "<tenant-guid>",
+  "ClientId": "<client-guid>",
+  "CallbackPath": "/signin-oidc"
+}
+```
+
+The template default for `Auth:ClientId` is a placeholder on purpose. Replace it with the **Application (client) ID** from the user sign-in app registration, or override it locally with `Auth__ClientId` in `server/.env`.
+
+If you change `CallbackPath`, remember to mirror it in the Entra redirect URIs.
+
+The Azure deployment bootstrap in section 5 creates a user-assigned managed identity for GitHub Actions OIDC. Do not use that managed identity's `clientId` as `Auth:ClientId`; it is separate from the application registration used for user sign-in.
+
+### Application roles
+
+Customize `GetRolesForUser` in [UserService.cs](server/Services/UserService.cs) to load your application's roles. The sample returns `User` and `SampleRole` for every user with an ID. Both Entra sign-in and cookie validation use `UpdateUserPrincipalIfNeeded` to apply those roles, replacing mapped Entra role claims while preserving other claims and identity metadata. Cookie validation renews the cookie only when the roles change.
+
+## 4. Secrets, Connection Strings, & Environment Files
+
+- Connection strings: overwrite `ConnectionStrings:DefaultConnection` in `server/appsettings.Development.json` or, preferably, set `DB_CONNECTION` in `server/.env` / `server/.env.Development`. `Program.cs` reads `DB_CONNECTION` first, then falls back to the JSON file.
+- Optional external telemetry: configure the commented telemetry settings from [server/.env.example](server/.env.example) in your local environment file when you have a collector endpoint and credentials.
+- `Program.cs` loads appsettings first, then `server/.env`, then the environment-specific file such as `server/.env.Development`. Process environment variables take precedence over those files.
+- Git ignores `.env` and `.env.*`, with an exception for `.env.example`. Commit only example scaffolding, never real credentials, and document which secrets are required for each environment.
+
+## 5. Azure Deployment Setup
+
+Replace all placeholder deployment names before the first cloud deployment. The defaults are intentionally generic:
+
+- `APP_NAME=webapp`
+- `RESOURCE_GROUP=rg-webapp-test` for `test`
+- `RESOURCE_GROUP=rg-webapp-prod` for `prod`
+
+The Azure deployment templates only allow `test` and `prod`. Resource groups must end with the matching environment suffix, and deployments must pass the expected subscription ID guard before resources are created.
+
+New applications use the existing organizational App Service plans by default:
+
+- `test`: `DefaultPlan2` in `Default-Web-WestUS`
+- `prod`: `Nibbler` in `service-plans-linux`
+
+Set `WEB_PLAN_NAME` and `WEB_PLAN_RESOURCE_GROUP` in a GitHub Environment, or export them for a local deployment, when an application needs to override both coordinates. The plan must already exist in the deployment subscription. The web app automatically uses the plan's region; `AZURE_LOCATION` continues to control the other regional resources created by the deployment.
+
+### GitHub Environments
+
+Create GitHub Environments named `test` and `prod`. Configure production reviewers or approval gates as appropriate for your project.
+
+Using GitHub CLI:
+
+```bash
+gh api --method PUT repos/<owner>/<repo>/environments/test
+gh api --method PUT repos/<owner>/<repo>/environments/prod
+```
+
+You need repository admin permission, and your `gh` token must be able to manage repository environments, variables, and secrets. If `gh variable set --env test ...` returns `HTTP 404: Not Found`, confirm the environment exists and that `gh repo view` points at the expected repository.
+
+Each environment needs these variables from the OIDC bootstrap output or your Azure subscription:
+
+- `AZURE_CLIENT_ID`: bootstrap `clientId` output
+- `AZURE_TENANT_ID`: bootstrap `tenantId` output
+- `AZURE_SUBSCRIPTION_ID`: bootstrap `subscriptionId` output
+- `RESOURCE_GROUP`: bootstrap `resourceGroupName` output
+
+The subscription-scoped OIDC bootstrap creates the application resource group and grants the deployment identity access to it. The Configure Azure workflow verifies that the group exists but does not create it. If the group is missing, verify `RESOURCE_GROUP` or rerun the bootstrap.
+
+`AZURE_LOCATION` is optional for the Configure Azure workflow. When it is unset, Bicep uses the existing resource group's location for regional resources. The local deployment script defaults it to `westus2` because that script can create the resource group.
+
+The shared App Service plan defaults normally require no GitHub variables. If you override them, configure both `WEB_PLAN_NAME` and `WEB_PLAN_RESOURCE_GROUP` and use the same values when running the OIDC bootstrap.
+
+For the Configure Azure workflow to create or update Azure SQL and App Service resources, add this secret:
+
+- `SQL_ADMIN_PASSWORD`
+
+Optionally configure `DB_CONNECTION` as an environment secret when the App Service should use a connection string other than the one produced by the Bicep-managed Azure SQL resources.
+
+Routine package deployments use `APP_NAME` to find the App Service by its `application` and `environment` tags. Set `WEB_APP_NAME` only when the workflow should target an App Service by its exact name instead.
+
+Application health verification defaults to a 60-second deadline. Set the optional GitHub Environment variable `APP_HEALTH_TIMEOUT_SECONDS` to a positive integer when an environment needs a longer startup window.
+
+### Deployment settings customization
+
+Customizable runtime App Service settings are generated from two JSON input files:
+
+- `infrastructure/azure/deployment-settings-defaults.json`: template-owned reference data for built-in direct runtime settings.
+- `infrastructure/azure/deployment-settings.json`: app-owned overlay for disabling built-ins, overriding runtime mappings, and adding app settings.
+
+The local schema `infrastructure/azure/deployment-settings.schema.json` documents field meanings, examples, and allowed values for editor support; it is not a generation input.
+
+Most projects should edit only `deployment-settings.json`, then run:
+
+```bash
+npm run deployment-settings:sync
+```
+
+Pull request validation runs `npm run deployment-settings:check` so generated Configure Azure workflow and local deploy script regions cannot drift.
+
+Override a built-in runtime mapping by GitHub Environment variable name:
+
+```json
+{
+  "version": 1,
+  "disabled": [],
+  "overrides": {
+    "NOTIFICATION_BASE_URL": {
+      "requiredWhen": "always"
+    }
+  },
+  "additions": []
+}
+```
+
+Disable an optional runtime App Service built-in setting when the app does not need it:
+
+```json
+{
+  "version": 1,
+  "disabled": ["SMTP_BCC_EMAIL"],
+  "overrides": {},
+  "additions": []
+}
+```
+
+Infrastructure deployment inputs, such as SQL admin values, database SKUs, existing App Service plan coordinates, and platform-derived app settings, are hand-authored in the deployment workflow, local deploy script, and Bicep files rather than managed by the deployment settings overlay.
+
+Use `defaultValue` on a built-in override or added setting when generated deployment scripts should apply a stable fallback if the GitHub Environment variable is unset.
+
+`requiredWhen` values apply to the generated tooling as follows: `always` is required by Configure Azure and all local deployments; `deploy_infra` is required by Configure Azure and local infrastructure deployments; `existing_infra` applies only to local deployments with `DEPLOY_INFRA=false`; and `never` remains optional.
+
+Add a runtime App Service setting:
+
+```json
+{
+  "version": 1,
+  "disabled": [],
+  "overrides": {},
+  "additions": [
+    {
+      "githubName": "FEATURE_FLAGS__ENABLE_BETA",
+      "appServiceName": "FeatureFlags__EnableBeta",
+      "classification": "variable",
+      "valueType": "bool",
+      "description": "Enables beta-only UI features."
+    }
+  ]
+}
+```
+
+Secrets use `"classification": "secret"` and are read from the selected GitHub Environment by the manual Configure Azure workflow. Routine package deployments do not receive application runtime secrets.
+
+`DB_CONNECTION`, App Insights settings, `ASPNETCORE_ENVIRONMENT`, and `WEBSITE_RUN_FROM_PACKAGE` remain hand-authored or platform-derived settings rather than overlay entries. `NOTIFICATION_BASE_URL` is a direct runtime setting; set it explicitly when notification links should use a stable hostname or custom domain.
+
+### One-time OIDC bootstrap
+
+Run `infrastructure/azure/github-oidc.bicep` once per environment before the first GitHub deployment. Run it again after repository, organization, GitHub Environment, resource group, subscription, shared App Service plan, or identity changes, or if the generated user-assigned managed identity is deleted.
+
+Why OIDC is used: GitHub Actions receives short-lived Azure tokens scoped to this repository and GitHub Environment. That removes the need to store long-lived Azure client secrets in GitHub.
+
+This bootstrap is only for deployment authentication from GitHub Actions to Azure. It does not create or configure the Microsoft Identity Web app registration used for end-user sign-in in section 3. It creates a user-assigned managed identity in the application resource group, adds the environment-scoped GitHub federated credential, and grants the identity Contributor on the application resource group and Website Contributor on the exact shared App Service plan by default.
+
+The managed identity lives in the resource group where it receives Contributor, matching the KOI deployment pattern. It can therefore manage its own managed-identity resource and federated credentials, but Contributor does not allow it to create, change, or delete Azure RBAC assignments.
+
+Validate the bootstrap for `test` before applying it:
+
+```bash
+az login
+az account set --subscription "<subscription-id>"
+deployment_name="github-oidc-<app-name>"
+web_plan_name="DefaultPlan2"
+web_plan_resource_group="Default-Web-WestUS"
+az deployment sub validate \
+  --location westus2 \
+  --template-file infrastructure/azure/github-oidc.bicep \
+  --parameters \
+    appName="<app-name>" \
+    repository="<owner>/<repo>" \
+    env="test" \
+    expectedSubscriptionId="<subscription-id>" \
+    resourceGroupName="rg-<app-name>-test" \
+    webPlanName="$web_plan_name" \
+    webPlanResourceGroup="$web_plan_resource_group"
+```
+
+Apply the bootstrap once validation succeeds:
+
+```bash
+deployment_name="github-oidc-<app-name>"
+web_plan_name="DefaultPlan2"
+web_plan_resource_group="Default-Web-WestUS"
+az deployment sub create \
+  --name "$deployment_name" \
+  --location westus2 \
+  --template-file infrastructure/azure/github-oidc.bicep \
+  --parameters \
+    appName="<app-name>" \
+    repository="<owner>/<repo>" \
+    env="test" \
+    expectedSubscriptionId="<subscription-id>" \
+    resourceGroupName="rg-<app-name>-test" \
+    webPlanName="$web_plan_name" \
+    webPlanResourceGroup="$web_plan_resource_group"
+```
+
+For example, with the default `APP_NAME=webapp`, use `deployment_name="github-oidc-webapp"`. For production, repeat with `env="prod"`, a production deployment name such as `deployment_name="github-oidc-<app-name>-prod"`, a `-prod` resource group, `webPlanName="Nibbler"`, and `webPlanResourceGroup="service-plans-linux"`. The bootstrap output should include `deploymentGuardPassed=true`, `deploymentIdentityName`, `clientId`, `tenantId`, `subscriptionId`, `principalId`, `resourceGroupName`, `federatedCredentialSubject`, and `webPlanRoleAssignmentId`.
+
+If you did not set `--name`, Azure CLI usually names the deployment after the template file, for example `github-oidc`. Find recent subscription deployments with:
+
+```bash
+az deployment sub list \
+  --query "sort_by([].{name:name,timestamp:properties.timestamp,provisioningState:properties.provisioningState}, &timestamp)[-5:]" \
+  --output table
+```
+
+Get the GitHub Environment variable values from the deployment outputs:
+
+```bash
+az deployment sub show \
+  --name "$deployment_name" \
+  --query "properties.outputs.{AZURE_CLIENT_ID:clientId.value,AZURE_TENANT_ID:tenantId.value,AZURE_SUBSCRIPTION_ID:subscriptionId.value,RESOURCE_GROUP:resourceGroupName.value,federatedCredentialSubject:federatedCredentialSubject.value}" \
+  --output table
+```
+
+Configure the GitHub Environment with those values:
+
+```bash
+gh variable set AZURE_CLIENT_ID --env test --body "$(az deployment sub show --name "$deployment_name" --query properties.outputs.clientId.value --output tsv)"
+gh variable set AZURE_TENANT_ID --env test --body "$(az deployment sub show --name "$deployment_name" --query properties.outputs.tenantId.value --output tsv)"
+gh variable set AZURE_SUBSCRIPTION_ID --env test --body "$(az deployment sub show --name "$deployment_name" --query properties.outputs.subscriptionId.value --output tsv)"
+gh variable set RESOURCE_GROUP --env test --body "$(az deployment sub show --name "$deployment_name" --query properties.outputs.resourceGroupName.value --output tsv)"
+```
+
+When overriding the organizational plan defaults, also configure the matching GitHub Environment variables:
+
+```bash
+gh variable set WEB_PLAN_NAME --env test --body "$web_plan_name"
+gh variable set WEB_PLAN_RESOURCE_GROUP --env test --body "$web_plan_resource_group"
+```
+
+Then add the SQL admin password as a GitHub Environment secret:
+
+```bash
+gh secret set SQL_ADMIN_PASSWORD --env test
+```
+
+The operator needs permission to create the application resource group and user-assigned managed identity. With the default `assignRbac=true`, the operator also needs permission to create role assignments at both the application resource group and shared App Service plan scopes. Owner at subscription scope is sufficient; equivalent narrower permissions can combine resource-group and managed-identity creation rights with User Access Administrator or Role Based Access Control Administrator at the required role-assignment scopes. If those permissions are unavailable, run with `assignRbac=false`, then have an Azure owner assign Contributor to the emitted `principalId` on the application resource group and Website Contributor on the exact shared App Service plan.
+
+For an existing installation that used the previous deployment app registration, apply this bootstrap to create parallel RBAC assignments for the new managed identity. Then replace the GitHub Environment's `AZURE_CLIENT_ID` with the new `clientId`, run Configure Azure, and run a normal package deployment. The bootstrap does not delete the previous app registration, service principal, or RBAC assignments.
+
+### First deployment
+
+The `CI/CD` workflow:
+
+- Validates pull requests.
+- Deploys pushes to `main` to the `test` environment without changing infrastructure or App Service settings.
+- Supports manual package deployments to `test` or `prod`.
+
+Before the first package deployment, run the manual `Configure Azure` workflow for the target environment. Run it again whenever Bicep, deployment settings, GitHub Environment variables, or GitHub Environment secrets change. Wait for configuration to finish before starting a package deployment. Both workflows use the same environment-specific FIFO concurrency queue, so configuration and package deployment for one environment cannot overlap, pending operations do not displace one another, and running operations are not canceled. The `test` and `prod` queues are independent, and GitHub retains up to 100 pending operations in each queue.
+
+For production, complete the manual [SQL connectivity prerequisite](infrastructure/azure/README.md#production-sql-connectivity) before deploying the first package.
+
+For local deployment:
+
+```bash
+export APP_NAME="<app-name>"
+export AZURE_SUBSCRIPTION_ID="<subscription-id>"
+export SQL_ADMIN_PASSWORD="<strong-password>"
+infrastructure/azure/deploy_test.sh
+```
+
+The local script uses the organizational shared-plan defaults. Export both `WEB_PLAN_NAME` and `WEB_PLAN_RESOURCE_GROUP` before running it when an application needs a different existing plan.
+
+Use `infrastructure/azure/deploy_prod.sh` for production. For existing Azure infrastructure, run:
+
+```bash
+DEPLOY_INFRA=false WEB_APP_NAME="<app-service-name>" infrastructure/azure/deploy.sh test
+```
+
+After App Service has a stable hostname or custom domain, add these redirect URIs to your app registration:
+
+- `https://<app-service-hostname>/signin-oidc`
+- `https://<custom-domain>/signin-oidc`, if you use a custom domain
+
+Portal flow:
+
+1. Go to https://entra.microsoft.com → **Applications** → **App registrations**.
+2. Open the application used for user sign-in, matching `AUTH_CLIENT_ID` / `Auth:ClientId`.
+3. Open **Authentication**.
+4. Under **Web** → **Redirect URIs**, add the App Service callback URI, for example `https://<app-service-hostname>/signin-oidc`.
+5. Save the app registration, then retry sign-in.
+
+Azure CLI flow:
+
+```bash
+auth_client_id="<auth-client-id>"
+redirect_uri="https://<app-service-hostname>/signin-oidc"
+
+redirect_uris=()
+while IFS= read -r existing_uri; do
+  redirect_uris+=("$existing_uri")
+done < <(az ad app show --id "$auth_client_id" --query "web.redirectUris[]" --output tsv)
+
+if [[ ! " ${redirect_uris[*]} " =~ " ${redirect_uri} " ]]; then
+  redirect_uris+=("$redirect_uri")
+fi
+
+az ad app update \
+  --id "$auth_client_id" \
+  --web-redirect-uris "${redirect_uris[@]}"
+```
+
+For this template deployment, the command is:
+
+```bash
+auth_client_id="<auth-client-id>"
+redirect_uri="https://<app-service-hostname>/signin-oidc"
+
+redirect_uris=()
+while IFS= read -r existing_uri; do
+  redirect_uris+=("$existing_uri")
+done < <(az ad app show --id "$auth_client_id" --query "web.redirectUris[]" --output tsv)
+
+if [[ ! " ${redirect_uris[*]} " =~ " ${redirect_uri} " ]]; then
+  redirect_uris+=("$redirect_uri")
+fi
+
+az ad app update \
+  --id "$auth_client_id" \
+  --web-redirect-uris "${redirect_uris[@]}"
+```
+
+The app currently applies existing EF Core migrations at startup. The deployment scaffold must not create or edit migrations, but first cloud deployment will apply whatever migrations already exist unless you change startup behavior.
+
+The app currently stores ASP.NET Core data-protection keys on the local filesystem. This is fine for typical single-instance App Service deployments. Configure shared key storage before scaling out to multiple instances or using slots that must share auth cookies.
+
+## 6. Telemetry & Logging Adjustments
+
+`server/Helpers/TelemetryHelper.cs` registers JSON console logging separately from OTLP exporters for logs, traces, and metrics. The exporters are registered even when no external collector is configured.
+
+Review the trace sampler in that helper for production. If you use external telemetry, configure an OTLP-compatible collector using the environment settings described in section 4 and confirm it receives logs, traces, and metrics.
+
+## 7. Email Notification
+
+See [optional email notifications](server.core/Notification/README.md) for SMTP setup, reusable services, sample composition and routes, and removal instructions.
+
+## 8. Clean Up Sample Code
+
+Remove or rewrite sample artifacts so they do not ship:
+
+- **Backend**
+  - Delete `server/Controllers/WeatherForecastController.cs` and associated domain types/seeds in `server.core/Domain/Weather.cs`, `server.core/Data/AppDbContext.cs`, and `server.core/Data/DbInitializer.cs`.
+  - Replace the sample EF Core migrations in `server.core/Migrations/` with migrations for your own schema (`dotnet ef migrations add InitialCreate -p server.core -s server`).
+  - Review `UserController` and shape the `/api/user/me` payload/claims to match your app.
+- **Frontend**
+  - Remove the showcase routes in `client/src/routes/(authenticated)/*`, `client/src/routes/about.tsx`, and related components in `client/src/shared/` once you no longer need them.
+  - Regenerate the router tree (`client/src/routeTree.gen.ts`) by re-running `cd client && npm run dev` after deleting or adding routes.
+  - Update or drop showcase-specific queries (`client/src/queries/*`) so TanStack Query only exposes real endpoints.
+
+Discard unused assets, tests, and mock data that referenced the template demos.
+
+## 9. Polish the UX & Tooling
+
+- Turn off dev-only tooling—`ReactQueryDevtools` and `TanStackRouterDevtools` in `client/src/routes/__root.tsx`—for production builds or gate them behind `import.meta.env.DEV`.
+- Update Swagger metadata (title, description, contact) inside `Program.cs` when calling `builder.Services.AddSwaggerGen(...)` or remove entirely.
+- Review `.devcontainer/devcontainer.json`, `.github/workflows/`, and `infrastructure/azure/` to ensure they use your new names, ports, environments, and variables.
+- Re-run `npm install`, `cd client && npm install`, and `dotnet restore` after updating Node/.NET versions (`global.json`) so everyone builds with the intended SDKs.
+
+## 10. Final Verification Checklist
+
+- [ ] `npm start` launches both servers on the expected ports.
+- [ ] `dotnet test` and `cd client && npm test` succeed.
+- [ ] `az bicep build --file infrastructure/azure/main.bicep` succeeds.
+- [ ] `az bicep build --file infrastructure/azure/github-oidc.bicep` succeeds.
+- [ ] GitHub Environment variables/secrets are configured from the OIDC bootstrap outputs.
+- [ ] If external telemetry is configured, logs, traces, and metrics reach your collector.
+- [ ] Signing in via Microsoft Entra succeeds locally (and in cloud environments, once deployed).
+- [ ] README and onboarding docs describe your product, not the template.
+
+Once everything above is done, commit the cleaned template as the first commit of your new application so future diffs show only your changes.

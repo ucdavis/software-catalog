@@ -25,6 +25,9 @@ function RouteComponent() {
           {/* Hero Message */}
           <div className="mb-8">
             <h1 className="text-5xl font-bold mb-4">Hello {user.name}!</h1>
+            <p className="text-lg mb-4 text-base-content/70">
+              Your IAM Id: {user.iamId || 'Not Found'}
+            </p>
             <p className="text-xl max-w-2xl mx-auto text-base-content/70">
               Welcome to your modern app template. Built with Vite, React,
               TypeScript, and TanStack Router for rapid development.
@@ -46,6 +49,21 @@ function RouteComponent() {
                 <div className="card-actions justify-end">
                   <Link className="btn btn-primary" to="/fetch">
                     Go to Table Page
+                  </Link>
+                </div>
+              </div>
+            </div>
+            <div className="card bg-base-100 shadow-md">
+              <div className="card-body">
+                <h3 className="card-title">Data Table Export Example</h3>
+                <p className="text-base-content/70">
+                  This page demonstrates a Walter-style export flow, with table
+                  actions separated from the DataTable and CSV columns defined
+                  alongside the data model.
+                </p>
+                <div className="card-actions justify-end">
+                  <Link className="btn btn-primary" to="/table-export">
+                    Go to Export Page
                   </Link>
                 </div>
               </div>
@@ -74,6 +92,20 @@ function RouteComponent() {
                 <div className="card-actions justify-end">
                   <Link className="btn btn-primary" to="/styles">
                     Go to Style Guide
+                  </Link>
+                </div>
+              </div>
+            </div>
+            <div className="card bg-base-100 shadow-md">
+              <div className="card-body">
+                <h3 className="card-title">Notification</h3>
+                <p className="text-base-content/70">
+                  See how server.core renders Razor templates into MJML-based
+                  email HTML and sends them through SMTP.
+                </p>
+                <div className="card-actions justify-end">
+                  <Link className="btn btn-primary" to="/notification">
+                    Go to Notification
                   </Link>
                 </div>
               </div>

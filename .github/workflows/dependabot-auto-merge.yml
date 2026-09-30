@@ -1,0 +1,164 @@
+name: Software catalog Dependabot auto-merge
+
+# Adapted from research-repo-tools' dependabot-approve.yml for npm/NuGet/Actions.
+# Only trusted base-branch policy runs here. No PR checkout or PR code execution.
+on: # zizmor: ignore[dangerous-triggers]
+  pull_request_target:
+    branches: [main]
+    types: [opened, reopened, synchronize, ready_for_review]
+
+permissions: {}
+
+concurrency:
+  group: software-catalog-dependabot-${{ github.event.pull_request.number }}
+  cancel-in-progress: true
+
+jobs:
+  auto-merge:
+    name: Approve verified dependency updates and enable auto-merge
+    if: >-
+      github.repository == 'ucdavis/software-catalog' &&
+      github.event.pull_request.user.id == 49699333 &&
+      github.event.pull_request.head.repo.full_name == github.repository &&
+      !github.event.pull_request.draft
+    runs-on: ubuntu-24.04
+    timeout-minutes: 5
+    permissions:
+      contents: write
+      pull-requests: write
+    steps:
+      - name: Verify Dependabot metadata and signed commits
+        id: metadata
+        uses: dependabot/fetch-metadata@25dd0e34f4fe68f24cc83900b1fe3fe149efef98 # v3.1.0
+        with:
+          skip-verification: false
+          skip-commit-verification: false
+
+      - name: Verify policy and approve the current head
+        id: policy
+        uses: actions/github-script@3a2844b7e9c422d3c10d287c895573f7108da1b3 # v9.0.0
+        env:
+          DEPENDENCIES: ${{ steps.metadata.outputs.updated-dependencies-json }}
+        with:
+          script: |
+            const filesByEcosystem = {
+              npm_and_yarn: ['package.json', 'package-lock.json', 'client/package.json', 'client/package-lock.json'],
+              nuget: ['.config/dotnet-tools.json', 'server/server.csproj', 'server.core/server.core.csproj', 'tests/server.tests/server.tests.csproj'],
+              github_actions: [
+                '.github/workflows/codeql.yml', '.github/workflows/security.yml',
+                '.github/workflows/dependabot-auto-merge.yml', '.github/workflows/ci-cd.yml',
+                '.github/workflows/configure-azure.yml', '.github/workflows/deploy-azure-appservice.yml',
+              ],
+            };
+            // Dependabot configuration owns version/group/security eligibility,
+            // including major updates. This policy verifies provenance and scope.
+            let dependencies;
+            try { dependencies = JSON.parse(process.env.DEPENDENCIES ?? ''); }
+            catch { core.notice('Missing or malformed Dependabot metadata; review manually.'); return; }
+            const ecosystem = dependencies?.[0]?.packageEcosystem;
+            if (!Array.isArray(dependencies) || dependencies.length === 0 ||
+                !Object.hasOwn(filesByEcosystem, ecosystem) ||
+                !dependencies.every(dep => dep?.packageEcosystem === ecosystem &&
+                  typeof dep.dependencyName === 'string' && dep.dependencyName.trim().length > 0)) {
+              core.notice('Unsupported or mixed dependency metadata; review manually.');
+              return;
+            }
+            const { owner, repo } = context.repo;
+            const pull_number = context.payload.pull_request.number;
+            const repository = `${owner}/${repo}`;
+            const sha = value => typeof value === 'string' && /^[0-9a-f]{40}$/.test(value);
+            const { data: pr } = await github.rest.pulls.get({ owner, repo, pull_number });
+            if (repository !== 'ucdavis/software-catalog' || pr.state !== 'open' || pr.draft ||
+                pr.base.ref !== 'main' || pr.base.repo?.full_name !== repository ||
+                pr.user.id !== 49699333 || pr.head.repo?.full_name !== repository ||
+                !sha(pr.head.sha) || !sha(pr.base.sha) ||
+                pr.head.sha !== context.payload.pull_request.head.sha) {
+              core.notice('PR identity, target, or head changed; wait for a fresh event.');
+              return;
+            }
+            // Read active rulesets directly, as in the research workflow. The
+            // legacy branch-protection summary does not expose review rules.
+            const rules = await github.paginate('GET /repos/{owner}/{repo}/rules/branches/{branch}',
+              { owner, repo, branch: pr.base.ref, per_page: 100 });
+            const protectedReviews = rules.some(rule => rule.type === 'pull_request' &&
+              rule.parameters?.required_approving_review_count >= 1 &&
+              rule.parameters.dismiss_stale_reviews_on_push === true &&
+              rule.parameters.required_review_thread_resolution === true);
+            const checks = rules.filter(rule => rule.type === 'required_status_checks' &&
+              rule.parameters?.strict_required_status_checks_policy === true)
+              .flatMap(rule => rule.parameters.required_status_checks ?? []);
+            const requiredChecks = [['Validate', 15368], ['Software catalog security', 15368], ['CodeRabbit', 347564], ['Codacy Static Code Analysis', 56611]];
+            if (!protectedReviews || !requiredChecks.every(([name, app]) =>
+                checks.some(check => check.context === name && check.integration_id === app))) {
+              core.notice('Require approvals, stale dismissal, resolved threads, and strict app-bound validation, security, CodeRabbit, and Codacy checks.');
+              return;
+            }
+            // fetch-metadata verifies the first commit. Verify the entire current
+            // chain too; later commits may only be signed, unchanged base merges.
+            const commits = await github.paginate(github.rest.pulls.listCommits, { owner, repo, pull_number, per_page: 100 });
+            if (!commits.length || commits.length !== pr.commits || commits.at(-1).sha !== pr.head.sha ||
+                commits[0].author?.id !== 49699333 || commits[0].parents?.length !== 1 ||
+                !commits.every(commit => sha(commit.sha) && commit.committer?.id === 19864447 &&
+                  commit.commit?.verification?.verified === true && Array.isArray(commit.parents) &&
+                  commit.parents.every(parent => sha(parent.sha)))) {
+              core.notice('Expected a complete GitHub-signed Dependabot commit chain; review manually.');
+              return;
+            }
+            for (let index = 1; index < commits.length; index++) {
+              const parents = commits[index].parents;
+              if (parents.length !== 2 || parents[0].sha !== commits[index - 1].sha) {
+                core.notice('Additional commits are not base merges; review manually.');
+                return;
+              }
+              const { data: comparison } = await github.rest.repos.compareCommitsWithBasehead({ owner, repo,
+                basehead: `${parents[1].sha}...${pr.base.sha}` });
+              if (!['ahead', 'identical'].includes(comparison.status) || comparison.merge_base_commit?.sha !== parents[1].sha) {
+                core.notice('Merged parent is not on the current base branch; review manually.');
+                return;
+              }
+            }
+            const allowedFiles = new Set(filesByEcosystem[ecosystem]);
+            const files = await github.paginate(github.rest.pulls.listFiles, { owner, repo, pull_number });
+            if (!files.length || files.length !== pr.changed_files ||
+                new Set(files.map(file => file.filename)).size !== files.length ||
+                files.some(file => file.status !== 'modified' || !allowedFiles.has(file.filename) || !sha(file.sha))) {
+              core.notice('Changes extend beyond the allowed dependency files; review manually.');
+              return;
+            }
+            if (commits.length > 1) {
+              const original = await github.rest.repos.getCommit({ owner, repo, ref: commits[0].sha, per_page: 100 });
+              // At most six unique files are allowed. A paginated original diff
+              // cannot match that set, so reject it without assuming completeness.
+              const entries = values => JSON.stringify(values.map(({ filename, status, sha }) =>
+                ({ filename, status, sha })).sort((a, b) => a.filename.localeCompare(b.filename)));
+              if (original.data.sha !== commits[0].sha || !Array.isArray(original.data.files) ||
+                  /rel="next"/.test(original.headers.link ?? '') || entries(original.data.files) !== entries(files)) {
+                core.notice('Base merges changed the original Dependabot update; review manually.');
+                return;
+              }
+            }
+            const reviews = await github.paginate(github.rest.pulls.listReviews, { owner, repo, pull_number, per_page: 100 });
+            const approval = reviews.filter(review => review.user?.id === 41898282 && review.commit_id === pr.head.sha)
+              .sort((a, b) => a.id - b.id).at(-1);
+            const snapshot = value => JSON.stringify([value.head.sha, value.base.sha, value.base.ref,
+              value.head.repo?.full_name, value.base.repo?.full_name, value.user.id, value.state, value.draft]);
+            const { data: current } = await github.rest.pulls.get({ owner, repo, pull_number });
+            if (snapshot(current) !== snapshot(pr)) {
+              core.notice('PR changed before approval; wait for a fresh event.');
+              return;
+            }
+            if (approval?.state !== 'APPROVED') {
+              await github.rest.pulls.createReview({ owner, repo, pull_number, commit_id: pr.head.sha,
+                event: 'APPROVE', body: 'Approved by the Dependabot policy. Required checks and review threads still gate merging.' });
+            }
+            core.setOutput('head-sha', pr.head.sha);
+            core.setOutput('eligible', 'true');
+
+      - name: Queue auto-merge subject to all branch protections
+        if: steps.policy.outputs.eligible == 'true'
+        env:
+          GH_TOKEN: ${{ github.token }}
+          GH_REPO: ${{ github.repository }}
+          PR_NUMBER: ${{ github.event.pull_request.number }}
+          HEAD_SHA: ${{ steps.policy.outputs.head-sha }}
+        run: gh pr merge "$PR_NUMBER" --auto --squash --match-head-commit "$HEAD_SHA"

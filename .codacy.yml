@@ -1,0 +1,11 @@
+---
+engines:
+  lizard:
+    exclude_paths:
+      - "package-lock.json"
+      - "client/package-lock.json"
+  metric:
+    # Codacy has no Bicep metrics tool. Keep other analysis enabled for these files.
+    exclude_paths:
+      - "infrastructure/azure/**/*.bicep"
+      - "infrastructure/azure/*.bicep"

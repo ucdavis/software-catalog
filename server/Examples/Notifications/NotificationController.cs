@@ -1,0 +1,146 @@
+using System.ComponentModel.DataAnnotations;
+using System.Security.Claims;
+using Microsoft.AspNetCore.Antiforgery;
+using Microsoft.AspNetCore.Mvc;
+using Server.Controllers;
+using Server.Core.Notification;
+
+namespace Server.Examples.Notifications;
+
+public sealed class NotificationController : ApiControllerBase
+{
+    private readonly IHostEnvironment _environment;
+    private readonly ILogger<NotificationController> _logger;
+    private readonly ISampleNotificationService _notificationService;
+
+    public NotificationController(
+        IHostEnvironment environment,
+        ILogger<NotificationController> logger,
+        ISampleNotificationService notificationService)
+    {
+        _environment = environment;
+        _logger = logger;
+        _notificationService = notificationService;
+    }
+
+    [HttpGet("antiforgery")]
+    [ResponseCache(NoStore = true, Location = ResponseCacheLocation.None)]
+    public IActionResult GetAntiforgeryToken([FromServices] IAntiforgery antiforgery)
+    {
+        if (!SampleEndpointsEnabled())
+        {
+            return NotFound();
+        }
+
+        return Ok(new { requestToken = antiforgery.GetAndStoreTokens(HttpContext).RequestToken });
+    }
+
+    [HttpPost("default")]
+    [ValidateAntiForgeryToken]
+    [ProducesResponseType(typeof(SendSampleNotificationResponse), StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    public async Task<IActionResult> SendSample(
+        [FromBody] NotificationRequest request,
+        CancellationToken cancellationToken)
+    {
+        if (!SampleEndpointsEnabled())
+        {
+            return NotFound();
+        }
+
+        var resolvedRecipient = ResolveRecipient(request.To);
+        if (string.IsNullOrWhiteSpace(resolvedRecipient))
+        {
+            return BadRequest("No email recipient was provided and the current user does not have an email claim.");
+        }
+
+        try
+        {
+            await _notificationService.SendAsync(EmailRecipients.Parse([resolvedRecipient]), request.Subject, request.Header, request.Message, cancellationToken);
+        }
+        catch (ValidationException ex)
+        {
+            return BadRequest(ex.Message);
+        }
+        catch (Exception ex) when (ex is not OperationCanceledException)
+        {
+            _logger.LogError(ex, "Failed to deliver notification email.");
+            return StatusCode(StatusCodes.Status502BadGateway,
+                "The notification email could not be sent due to a delivery error.");
+        }
+
+        return Ok(new SendSampleNotificationResponse
+        {
+            To = resolvedRecipient,
+        });
+    }
+
+    [HttpPost("table")]
+    [ValidateAntiForgeryToken]
+    [ProducesResponseType(typeof(SendSampleNotificationResponse), StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    public async Task<IActionResult> SendTableSample(
+        [FromBody] TableNotificationRequest request,
+        CancellationToken cancellationToken)
+    {
+        if (!SampleEndpointsEnabled())
+        {
+            return NotFound();
+        }
+
+        if (request.Rows.Any(row => row == null))
+        {
+            return BadRequest("Table rows must not contain null entries.");
+        }
+
+        var resolvedRecipient = ResolveRecipient(request.To);
+        if (string.IsNullOrWhiteSpace(resolvedRecipient))
+        {
+            return BadRequest("No email recipient was provided and the current user does not have an email claim.");
+        }
+
+        try
+        {
+            await _notificationService.SendTableAsync(EmailRecipients.Parse([resolvedRecipient]), request.Subject, request.Header, request.Message,
+            request.Rows.Select(row => new NotificationTableRow
+            {
+                Title = row.Title,
+                Details = row.Details,
+                Amount = row.Amount,
+            }).ToArray(), request.TotalAmount, cancellationToken);
+        }
+        catch (ValidationException ex)
+        {
+            return BadRequest(ex.Message);
+        }
+        catch (Exception ex) when (ex is not OperationCanceledException)
+        {
+            _logger.LogError(ex, "Failed to deliver table notification email.");
+            return StatusCode(StatusCodes.Status502BadGateway,
+                "The notification email could not be sent due to a delivery error.");
+        }
+
+        return Ok(new SendSampleNotificationResponse
+        {
+            To = resolvedRecipient,
+        });
+    }
+
+    private string? ResolveRecipient(string? requestedRecipient)
+    {
+        if (!string.IsNullOrWhiteSpace(requestedRecipient))
+        {
+            return requestedRecipient;
+        }
+
+        return User.FindFirst("preferred_username")?.Value
+               ?? User.FindFirst(ClaimTypes.Email)?.Value;
+    }
+
+    private bool SampleEndpointsEnabled()
+    {
+        return _environment.IsDevelopment() || _environment.IsEnvironment("test");
+    }
+}
