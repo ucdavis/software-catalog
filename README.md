@@ -2,6 +2,8 @@
 
 The UC Davis Software Catalog starter, based on [ucdavis/web-app-template](https://github.com/ucdavis/web-app-template), with a .NET 10 backend, React/TypeScript frontend, and Microsoft Entra ID authentication. It currently provides template examples; catalog-specific data and authorization remain application work.
 
+See the [Software Catalog project page in Notion](https://app.notion.com/p/3ebe70f6741181059d45e5c19aa90783) for project status, architecture, and related notes and tasks.
+
 ## Quick start
 
 Start from a checkout of this repository:

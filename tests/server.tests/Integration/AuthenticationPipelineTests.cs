@@ -70,4 +70,44 @@ public sealed class AuthenticationPipelineTests(ApplicationFactory application) 
         using var forecasts = await client.GetAsync("/api/weatherforecast");
         Assert.Equal(forecastStatus, forecasts.StatusCode);
     }
+
+    [Theory]
+    [InlineData(false)]
+    [InlineData(true)]
+    public async Task Local_logout_requires_antiforgery_and_clears_the_session_only_on_success(bool includeToken)
+    {
+        using var client = CreateClient();
+        var token = await GetAntiforgeryToken(client);
+        using var login = await client.PostAsync("/login/local", new FormUrlEncodedContent(
+            new Dictionary<string, string>
+            {
+                ["persona"] = "sample",
+                ["__RequestVerificationToken"] = token,
+            }));
+        Assert.Equal(HttpStatusCode.Redirect, login.StatusCode);
+        using var beforeLogout = await client.GetAsync("/api/user/me");
+        Assert.Equal(HttpStatusCode.OK, beforeLogout.StatusCode);
+
+        // Antiforgery tokens are bound to identity: obtain a new one after sign-in.
+        var form = new Dictionary<string, string>();
+        if (includeToken)
+        {
+            form["__RequestVerificationToken"] = await GetAntiforgeryToken(client);
+        }
+        using var logout = await client.PostAsync("/logout/local", new FormUrlEncodedContent(form));
+        Assert.Equal(includeToken ? HttpStatusCode.Redirect : HttpStatusCode.BadRequest, logout.StatusCode);
+        Assert.Equal(includeToken ? "/login" : null, logout.Headers.Location?.OriginalString);
+        using var afterLogout = await client.GetAsync("/api/user/me");
+        Assert.Equal(includeToken ? HttpStatusCode.Unauthorized : HttpStatusCode.OK, afterLogout.StatusCode);
+        Assert.Null(afterLogout.Headers.Location);
+    }
+
+    private static async Task<string> GetAntiforgeryToken(HttpClient client)
+    {
+        var html = await client.GetStringAsync("/login");
+        var token = Regex.Match(html, "name=\"__RequestVerificationToken\"[^>]*value=\"([^\"]+)\"",
+            RegexOptions.CultureInvariant, TimeSpan.FromSeconds(1));
+        Assert.True(token.Success, "The real login view must render an antiforgery field.");
+        return WebUtility.HtmlDecode(token.Groups[1].Value);
+    }
 }

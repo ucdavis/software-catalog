@@ -175,8 +175,9 @@ try
     app.MapFallbackToFile("/index.html", staticFileOptions);
 
     app.Logger.LogInformation("Startup complete. Listening on {Urls}", string.Join(", ", app.Urls));
+    app.Lifetime.ApplicationStopping.Register(() =>
+        app.Logger.LogInformation("Shutting down {AppName} in {Environment} environment", app.Environment.ApplicationName, app.Environment.EnvironmentName));
     app.Run();
-    app.Logger.LogInformation("Shutting down {AppName} in {Environment} environment", app.Environment.ApplicationName, app.Environment.EnvironmentName);
 }
 catch (Exception ex)
 {
