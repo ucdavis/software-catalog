@@ -200,4 +200,6 @@ static void ApplyNoStoreHeaders(HttpContext context)
 }
 
 // Expose the real application entry point to WebApplicationFactory integration tests.
+#pragma warning disable S1118 // ASP.NET's public partial Program is the integration-test entry point.
 public partial class Program { }
+#pragma warning restore S1118

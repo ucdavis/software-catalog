@@ -55,9 +55,11 @@ public sealed class ApplicationFactory : WebApplicationFactory<Program>
 
     private sealed class SqliteInitializer(AppDbContext context) : IDbInitializer
     {
+#pragma warning disable S1172 // Interface-mandated parameter; this test initializer deliberately omits sample data.
         public async Task InitializeAsync(bool includeSampleData, CancellationToken cancellationToken = default)
         {
             await context.Database.EnsureCreatedAsync(cancellationToken);
         }
+#pragma warning restore S1172
     }
 }
