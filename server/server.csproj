@@ -60,8 +60,9 @@
   </Target>
 
   <Target Name="PublishClientAssets" AfterTargets="ComputeFilesToPublish">
-    <Exec WorkingDirectory="$(SpaRoot)" Command="$(ClientRestoreCommand)" />
-    <Exec WorkingDirectory="$(SpaRoot)" Command="npm run build" />
+    <Exec WorkingDirectory="$(SpaRoot)" Command="$(ClientRestoreCommand)" Condition="'$(BuildClientAssets)' != 'false'" />
+    <Exec WorkingDirectory="$(SpaRoot)" Command="npm run build" Condition="'$(BuildClientAssets)' != 'false'" />
+    <Error Condition="!Exists('$(SpaRoot)dist/index.html')" Text="Client assets are missing. Run npm run build:client before publishing with BuildClientAssets=false." />
 
     <ItemGroup>
       <DistFiles Include="$(SpaRoot)dist\**" />

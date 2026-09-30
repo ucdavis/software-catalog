@@ -7,8 +7,15 @@
     "noEmit": true,
     "strict": true,
     "target": "esnext",
-    "types": ["node"],
+    "types": [
+      "node"
+    ],
     "verbatimModuleSyntax": true
   },
-  "include": ["scripts/**/*.mts", "scripts/**/*.ts"]
+  "include": [
+    "scripts/**/*.mts",
+    "scripts/**/*.ts",
+    "playwright.config.mts",
+    "tests/browser/**/*.mts"
+  ]
 }

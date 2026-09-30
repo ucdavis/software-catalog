@@ -26,6 +26,22 @@ jobs:
     name: Validate
     if: ${{ github.event_name == 'pull_request' }}
     runs-on: ubuntu-latest
+    timeout-minutes: 20
+    concurrency:
+      group: software-catalog-validation-${{ github.ref }}
+      cancel-in-progress: true
+    services:
+      sql:
+        image: mcr.microsoft.com/mssql/server:2022-latest
+        env:
+          ACCEPT_EULA: "Y"
+          MSSQL_PID: Developer
+          MSSQL_SA_PASSWORD: 'CiOnly-SoftwareCatalog1!'
+        ports:
+          - 1433:1433
+        options: >-
+          --health-cmd="/opt/mssql-tools18/bin/sqlcmd -C -S localhost -U sa -P 'CiOnly-SoftwareCatalog1!' -Q 'SELECT 1'"
+          --health-interval=10s --health-timeout=5s --health-retries=20
     steps:
       - name: Checkout
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
@@ -40,7 +56,7 @@ jobs:
       - name: Setup Node.js
         uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
         with:
-          node-version: 22.x
+          node-version-file: .nvmrc
           cache: npm
           cache-dependency-path: |
             package-lock.json
@@ -49,46 +65,42 @@ jobs:
       - name: Restore deployment tooling dependencies
         run: npm ci
 
-      - name: Check deployment settings
-        run: npm run deployment-settings:check
-
-      - name: Test dependency approval policy and secret-scan file selection
-        run: npm run test:tooling
-
       - name: Check Bicep templates
         run: |
           az bicep build --file infrastructure/azure/main.bicep --stdout > /dev/null
           az bicep build --file infrastructure/azure/github-oidc.bicep --stdout > /dev/null
 
       - name: Restore frontend dependencies
-        working-directory: client
-        run: npm ci
-
-      - name: Lint frontend
-        working-directory: client
-        run: npm run lint
-
-      - name: Build frontend
-        working-directory: client
-        run: npm run build
-
-      - name: Test frontend
-        working-directory: client
-        run: npm test -- --run
+        run: npm ci --prefix client
 
       - name: Restore .NET projects
         run: dotnet restore app.sln
 
-      - name: Build .NET projects
-        run: dotnet build app.sln --configuration Release --no-restore
+      - name: Validate source, clean analyzer build, and fast tests
+        run: npm run check:clean
 
-      - name: Test .NET projects
-        run: dotnet test app.sln --configuration Release --no-build
+      - name: Test SQL Server migrations and queries
+        env:
+          TEST_SQL_CONNECTION: 'Server=localhost,1433;User ID=sa;Password=CiOnly-SoftwareCatalog1!;Encrypt=False;TrustServerCertificate=True'
+        run: npm run test:sql
+
+      - name: Verify production packaging using the already-built assets
+        run: npm run publish:smoke
+
+      - name: Install Chromium for browser smoke tests
+        run: npx --no-install playwright install --with-deps chromium
+
+      - name: Test sign-in and navigation against the published app
+        env:
+          SMOKE_START_SERVER: 'true'
+          SMOKE_SQL_CONNECTION: 'Server=localhost,1433;Database=SoftwareCatalogSmoke;User ID=sa;Password=CiOnly-SoftwareCatalog1!;Encrypt=False;TrustServerCertificate=True'
+        run: npm run test:browser
 
   deploy_test:
     name: Deploy test
     if: ${{ github.event_name == 'push' && github.ref == 'refs/heads/main' }}
-    uses: ./.github/workflows/deploy-azure-appservice.yml
+    # Reusable workflows resolve from the caller's commit, not the checked-out workspace.
+    uses: ./.github/workflows/deploy-azure-appservice.yml # zizmor: ignore[self-repository]
     permissions:
       contents: read
       id-token: write
@@ -97,8 +109,9 @@ jobs:
 
   deploy_manual:
     name: Deploy ${{ inputs.environment }}
-    if: ${{ github.event_name == 'workflow_dispatch' }}
-    uses: ./.github/workflows/deploy-azure-appservice.yml
+    if: ${{ github.event_name == 'workflow_dispatch' && (inputs.environment != 'prod' || github.ref == 'refs/heads/main') }}
+    # GitHub documents ./ for same-repository reusable workflows (jobs.<id>.uses).
+    uses: ./.github/workflows/deploy-azure-appservice.yml # zizmor: ignore[self-repository]
     permissions:
       contents: read
       id-token: write

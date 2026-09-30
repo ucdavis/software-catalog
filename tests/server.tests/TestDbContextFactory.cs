@@ -6,17 +6,17 @@ namespace Server.Tests;
 public static class TestDbContextFactory
 {
     /// <summary>
-    /// Creates a fresh AppDbContext using EFCore InMemory with a unique database name,
-    /// so each test starts clean.
+    /// Creates an isolated relational database, owned and disposed by the context.
+    /// SQL Server migrations and provider behavior have a separate integration suite.
     /// </summary>
-    public static AppDbContext CreateInMemory()
+    public static AppDbContext CreateSqlite()
     {
         var options = new DbContextOptionsBuilder<AppDbContext>()
-            .UseInMemoryDatabase(databaseName: $"TestDb_{Guid.NewGuid():N}")
-            .EnableSensitiveDataLogging()
+            .UseSqlite("Data Source=:memory:")
             .Options;
 
         var ctx = new AppDbContext(options);
+        ctx.Database.OpenConnection();
         ctx.Database.EnsureCreated();
         return ctx;
     }

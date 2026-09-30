@@ -39,7 +39,7 @@ if (process.argv[1] && resolve(process.argv[1]) === fileURLToPath(import.meta.ur
       stdio: 'inherit',
     });
     if (result.error) {
-      console.error('Cannot run gitleaks. See docs/DEPENDENCY-AUTOMATION.md for installation.', result.error.message);
+      console.error('Cannot run gitleaks. See docs/DEPENDENCY_UPDATES.md for installation.', result.error.message);
     }
     process.exitCode = result.status ?? 1;
   } finally {
