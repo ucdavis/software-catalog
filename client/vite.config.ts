@@ -14,6 +14,27 @@ const target = env.ASPNETCORE_URLS
 
 // https://vitejs.dev/config/
 export default defineConfig({
+  build: {
+    rollupOptions: {
+      onwarn(warning, warn) {
+        // Zod 4.6.5 mentions @__PURE__ in two explanatory comments. Rollup
+        // mistakes those for annotations; the actual call annotations are valid.
+        // Remove this exception when Zod fixes the comments upstream.
+        if (
+          warning.code === 'INVALID_ANNOTATION' &&
+          ((warning.id?.endsWith('/node_modules/zod/v4/core/regexes.js') &&
+            warning.message.includes(
+              'esbuild will not drop a `@__PURE__` call'
+            )) ||
+            (warning.id?.endsWith('/node_modules/zod/v4/core/util.js') &&
+              warning.message.includes('Wrapped in a `@__PURE__` IIFE')))
+        ) {
+          return;
+        }
+        warn(warning);
+      },
+    },
+  },
   plugins: [
     tanstackRouter({
       autoCodeSplitting: true,
