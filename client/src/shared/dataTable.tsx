@@ -1,5 +1,3 @@
-'use no memo';
-
 import type { ReactNode } from 'react';
 import {
   ColumnDef,
@@ -14,8 +12,7 @@ import {
 } from '@tanstack/react-table';
 
 type TableActionsRenderer<TData extends object> =
-  | ReactNode
-  | ((table: Table<TData>) => ReactNode);
+  ReactNode | ((table: Table<TData>) => ReactNode);
 
 interface DataTableProps<TData extends object> {
   columns: ColumnDef<TData>[];
@@ -34,8 +31,11 @@ export const DataTable = <TData extends object>({
   initialState,
   tableActions,
 }: DataTableProps<TData>) => {
-  // see note in https://tanstack.com/table/latest/docs/installation#react-table.  Added "use no memo" just to be safe but it's unnecessary.
-  // once tanstack updates their docs and makes sure it works w/ react compiler (even though we aren't using it yet), we can remove this comment
+  'use no memo';
+
+  // TanStack Table is incompatible with React Compiler. Keep the opt-out scoped
+  // to this component if the compiler is enabled in the future.
+  // https://tanstack.com/table/latest/docs/installation#react-table
   // eslint-disable-next-line react-hooks/incompatible-library
   const table = useReactTable({
     columns,
